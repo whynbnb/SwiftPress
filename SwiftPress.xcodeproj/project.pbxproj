@@ -11,6 +11,7 @@
 		A10007 /* SwiftPressApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10010 /* SwiftPressApp.swift */; };
 		A10008 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10011 /* ContentView.swift */; };
 		A10009 /* DMGViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10012 /* DMGViewModel.swift */; };
+		A10013 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10014 /* AboutView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -21,6 +22,7 @@
 		A10010 /* SwiftPressApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SwiftPressApp.swift; path = Sources/SwiftPress/SwiftPressApp.swift; sourceTree = "<group>"; };
 		A10011 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ContentView.swift; path = Sources/SwiftPress/ContentView.swift; sourceTree = "<group>"; };
 		A10012 /* DMGViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DMGViewModel.swift; path = Sources/SwiftPress/DMGViewModel.swift; sourceTree = "<group>"; };
+		A10014 /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AboutView.swift; path = Sources/SwiftPress/AboutView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -40,6 +42,7 @@
 				A10010 /* SwiftPressApp.swift */,
 				A10011 /* ContentView.swift */,
 				A10012 /* DMGViewModel.swift */,
+				A10014 /* AboutView.swift */,
 			);
 			name = Sources;
 			sourceTree = "<group>";
@@ -123,6 +126,7 @@
 				A10007 /* SwiftPressApp.swift in Sources */,
 				A10008 /* ContentView.swift in Sources */,
 				A10009 /* DMGViewModel.swift in Sources */,
+				A10013 /* AboutView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
