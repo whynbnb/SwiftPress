@@ -9,7 +9,9 @@ let package = Package(
             name: "SwiftPress",
             dependencies: [],
             path: "Sources/SwiftPress",
-            resources: [],
+            resources: [
+                .process("Resources")
+            ],
             swiftSettings: [
                 .unsafeFlags(["-parse-as-library"])
             ]
