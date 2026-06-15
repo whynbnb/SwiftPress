@@ -75,7 +75,7 @@ class DMGViewModel: ObservableObject {
 
         let dmgPath = outputURL.path
         let appName = appURL.lastPathComponent
-        let volName = appURL.deletingPathExtension().lastPathComponent
+        let volName = outputURL.deletingPathExtension().lastPathComponent
 
         Task {
             do {
