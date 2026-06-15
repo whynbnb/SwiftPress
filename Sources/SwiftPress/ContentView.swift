@@ -2,14 +2,15 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var viewModel = DMGViewModel()
+    @ObservedObject private var settings = AppSettings.shared
 
     var body: some View {
         VStack(spacing: 20) {
-            Text("SwiftPress")
+            Text(L10n.tr("app.title"))
                 .font(.title)
                 .fontWeight(.bold)
 
-            Text("简易 DMG 安装包制作工具")
+            Text(L10n.tr("app.subtitle"))
                 .font(.subheadline)
                 .foregroundColor(.secondary)
 
@@ -45,10 +46,10 @@ struct ContentView: View {
                         Image(systemName: "arrow.down.doc.fill")
                             .font(.system(size: 36))
                             .foregroundColor(.secondary)
-                        Text("拖入 .app 文件")
+                        Text(L10n.tr("drop.hint"))
                             .font(.headline)
                             .foregroundColor(.secondary)
-                        Button("或点击浏览...") {
+                        Button(L10n.tr("drop.browse")) {
                             viewModel.chooseApp()
                         }
                     }
@@ -78,14 +79,14 @@ struct ContentView: View {
             if viewModel.appURL != nil {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack {
-                        Text("输出:")
+                        Text(L10n.tr("output.label"))
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                         Text(viewModel.defaultOutputName)
                             .font(.subheadline)
                             .fontWeight(.medium)
                         Spacer()
-                        Button("更改...") {
+                        Button(L10n.tr("output.change")) {
                             viewModel.chooseOutput()
                         }
                     }
@@ -110,7 +111,7 @@ struct ContentView: View {
             Button {
                 viewModel.createDMG()
             } label: {
-                Label("制作 DMG", systemImage: "opticaldiscdrive")
+                Label(L10n.tr("btn.create"), systemImage: "opticaldiscdrive")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
@@ -120,21 +121,22 @@ struct ContentView: View {
         }
         .padding()
         .frame(minWidth: 460, minHeight: 360)
-        .alert("完成", isPresented: $viewModel.showSuccess) {
-            Button("在 Finder 中显示") {
+        .preferredColorScheme(settings.resolvedColorScheme)
+        .alert(L10n.tr("alert.success"), isPresented: $viewModel.showSuccess) {
+            Button(L10n.tr("alert.showInFinder")) {
                 if let url = viewModel.outputURL {
                     NSWorkspace.shared.activateFileViewerSelecting([url])
                 }
             }
-            Button("好") {}
+            Button(L10n.tr("alert.ok")) {}
         } message: {
-            Text("DMG 已创建: \(viewModel.outputURL?.lastPathComponent ?? "")")
+            Text(L10n.tr("alert.success.msg", viewModel.outputURL?.lastPathComponent ?? ""))
         }
-        .alert("错误", isPresented: .init(
+        .alert(L10n.tr("alert.error"), isPresented: .init(
             get: { viewModel.errorMessage != nil },
             set: { if !$0 { viewModel.errorMessage = nil } }
         )) {
-            Button("好") {}
+            Button(L10n.tr("alert.ok")) {}
         } message: {
             Text(viewModel.errorMessage ?? "")
         }

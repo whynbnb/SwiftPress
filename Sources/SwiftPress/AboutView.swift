@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct AboutView: View {
+    @ObservedObject private var settings = AppSettings.shared
+
     private var appVersion: String {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
         let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String
@@ -31,7 +33,7 @@ struct AboutView: View {
                 .font(.subheadline)
                 .foregroundColor(.secondary)
 
-            Text("简易 DMG 安装包制作工具")
+            Text(L10n.tr("about.subtitle"))
                 .font(.caption)
                 .foregroundColor(.secondary)
 
@@ -40,7 +42,7 @@ struct AboutView: View {
 
             VStack(spacing: 8) {
                 HStack(spacing: 4) {
-                    Text("开源许可:")
+                    Text(L10n.tr("about.license"))
                         .font(.caption)
                         .foregroundColor(.secondary)
                     Text("MIT")
@@ -50,7 +52,7 @@ struct AboutView: View {
 
                 if let repoURL = URL(string: "https://github.com/WHYBBE/SwiftPress") {
                     HStack(spacing: 4) {
-                        Text("源码仓库:")
+                        Text(L10n.tr("about.repo"))
                             .font(.caption)
                             .foregroundColor(.secondary)
                         Link("github.com/WHYBBE/SwiftPress", destination: repoURL)
@@ -61,11 +63,12 @@ struct AboutView: View {
 
             Spacer()
 
-            Text("Copyright © 2026 WHYBBE")
+            Text(L10n.tr("about.copyright"))
                 .font(.caption2)
                 .foregroundColor(.secondary)
         }
         .padding(24)
         .frame(width: 280, height: 380)
+        .preferredColorScheme(settings.resolvedColorScheme)
     }
 }

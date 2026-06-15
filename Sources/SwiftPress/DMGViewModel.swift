@@ -41,7 +41,7 @@ class DMGViewModel: ObservableObject {
 
     func chooseApp() {
         let panel = NSOpenPanel()
-        panel.title = "选择 .app 文件"
+        panel.title = L10n.tr("panel.chooseApp")
         panel.canChooseDirectories = false
         panel.canChooseFiles = true
         panel.allowsMultipleSelection = false
@@ -53,7 +53,7 @@ class DMGViewModel: ObservableObject {
 
     func chooseOutput() {
         let panel = NSSavePanel()
-        panel.title = "保存 DMG"
+        panel.title = L10n.tr("panel.saveDMG")
         panel.allowedContentTypes = [.diskImage]
         panel.nameFieldStringValue = defaultOutputName
         if let currentDir = outputURL?.deletingLastPathComponent() {
@@ -70,7 +70,7 @@ class DMGViewModel: ObservableObject {
         guard let appURL, let outputURL else { return }
         isCreating = true
         progress = 0
-        statusMessage = "准备中..."
+        statusMessage = L10n.tr("status.preparing")
         errorMessage = nil
 
         let dmgPath = outputURL.path
@@ -83,22 +83,22 @@ class DMGViewModel: ObservableObject {
                     .appendingPathComponent("swiftpress_\(UUID().uuidString)")
                 try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
 
-                await updateStatus("创建临时目录...", progress: 0.1)
+                await updateStatus(L10n.tr("status.tempDir"), progress: 0.1)
 
                 let dmgStaging = tempDir.appendingPathComponent(volName)
                 try FileManager.default.createDirectory(at: dmgStaging, withIntermediateDirectories: true)
 
-                await updateStatus("拷贝 .app 文件...", progress: 0.2)
+                await updateStatus(L10n.tr("status.copying"), progress: 0.2)
 
                 let destApp = dmgStaging.appendingPathComponent(appName)
                 try FileManager.default.copyItem(at: appURL, to: destApp)
 
-                await updateStatus("创建 /Applications 替身...", progress: 0.5)
+                await updateStatus(L10n.tr("status.symlink"), progress: 0.5)
 
                 let applicationsAlias = dmgStaging.appendingPathComponent("Applications")
                 try createApplicationsSymlink(at: applicationsAlias)
 
-                await updateStatus("正在制作 DMG...", progress: 0.6)
+                await updateStatus(L10n.tr("status.creating"), progress: 0.6)
 
                 try await createDMGWithHdiutil(
                     stagingPath: dmgStaging.path,
@@ -106,10 +106,10 @@ class DMGViewModel: ObservableObject {
                     volumeName: volName
                 )
 
-                await updateStatus("清理临时文件...", progress: 0.9)
+                await updateStatus(L10n.tr("status.cleaning"), progress: 0.9)
                 try FileManager.default.removeItem(at: tempDir)
 
-                await updateStatus("完成!", progress: 1.0)
+                await updateStatus(L10n.tr("status.done"), progress: 1.0)
 
                 isCreating = false
                 showSuccess = true
@@ -172,11 +172,11 @@ class DMGViewModel: ObservableObject {
 
         if process.terminationStatus != 0 {
             let errorData = pipe.fileHandleForReading.readDataToEndOfFile()
-            let errorMsg = String(data: errorData, encoding: .utf8) ?? "未知错误"
+            let errorMsg = String(data: errorData, encoding: .utf8) ?? "Unknown error"
             throw NSError(
                 domain: "SwiftPress",
                 code: Int(process.terminationStatus),
-                userInfo: [NSLocalizedDescriptionKey: "hdiutil 失败:\n\(errorMsg)"]
+                userInfo: [NSLocalizedDescriptionKey: "hdiutil failed:\n\(errorMsg)"]
             )
         }
     }

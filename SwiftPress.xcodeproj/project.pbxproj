@@ -7,50 +7,59 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A10006 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A10003 /* Assets.xcassets */; };
-		A10007 /* SwiftPressApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10010 /* SwiftPressApp.swift */; };
-		A10008 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10011 /* ContentView.swift */; };
-		A10009 /* DMGViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10012 /* DMGViewModel.swift */; };
-		A10013 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10014 /* AboutView.swift */; };
+		B06 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B03 /* Assets.xcassets */; };
+		B07 /* SwiftPressApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10 /* SwiftPressApp.swift */; };
+		B08 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11 /* ContentView.swift */; };
+		B09 /* DMGViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F12 /* DMGViewModel.swift */; };
+		B10 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F13 /* AboutView.swift */; };
+		B11 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = F14 /* AppSettings.swift */; };
+		B12 /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = F15 /* L10n.swift */; };
+		B13 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F16 /* SettingsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		A10001 /* SwiftPress.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SwiftPress.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		A10003 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = Sources/SwiftPress/Resources/Assets.xcassets; sourceTree = "<group>"; };
-		A10004 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		A10005 /* SwiftPress.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SwiftPress.entitlements; sourceTree = "<group>"; };
-		A10010 /* SwiftPressApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SwiftPressApp.swift; path = Sources/SwiftPress/SwiftPressApp.swift; sourceTree = "<group>"; };
-		A10011 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ContentView.swift; path = Sources/SwiftPress/ContentView.swift; sourceTree = "<group>"; };
-		A10012 /* DMGViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DMGViewModel.swift; path = Sources/SwiftPress/DMGViewModel.swift; sourceTree = "<group>"; };
-		A10014 /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AboutView.swift; path = Sources/SwiftPress/AboutView.swift; sourceTree = "<group>"; };
+		B01 /* SwiftPress.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SwiftPress.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B03 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = Sources/SwiftPress/Resources/Assets.xcassets; sourceTree = "<group>"; };
+		B04 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B05 /* SwiftPress.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SwiftPress.entitlements; sourceTree = "<group>"; };
+		F10 /* SwiftPressApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SwiftPressApp.swift; path = Sources/SwiftPress/SwiftPressApp.swift; sourceTree = "<group>"; };
+		F11 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ContentView.swift; path = Sources/SwiftPress/ContentView.swift; sourceTree = "<group>"; };
+		F12 /* DMGViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DMGViewModel.swift; path = Sources/SwiftPress/DMGViewModel.swift; sourceTree = "<group>"; };
+		F13 /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AboutView.swift; path = Sources/SwiftPress/AboutView.swift; sourceTree = "<group>"; };
+		F14 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppSettings.swift; path = Sources/SwiftPress/AppSettings.swift; sourceTree = "<group>"; };
+		F15 /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = L10n.swift; path = Sources/SwiftPress/L10n.swift; sourceTree = "<group>"; };
+		F16 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SettingsView.swift; path = Sources/SwiftPress/SettingsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
-		A10020 /* Main Group */ = {
+		G01 /* Main Group */ = {
 			isa = PBXGroup;
 			children = (
-				A10021 /* Sources */,
-				A10003 /* Assets.xcassets */,
-				A10004 /* Info.plist */,
-				A10005 /* SwiftPress.entitlements */,
+				G02 /* Sources */,
+				B03 /* Assets.xcassets */,
+				B04 /* Info.plist */,
+				B05 /* SwiftPress.entitlements */,
 			);
 			sourceTree = "<group>";
 		};
-		A10021 /* Sources */ = {
+		G02 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
-				A10010 /* SwiftPressApp.swift */,
-				A10011 /* ContentView.swift */,
-				A10012 /* DMGViewModel.swift */,
-				A10014 /* AboutView.swift */,
+				F10 /* SwiftPressApp.swift */,
+				F11 /* ContentView.swift */,
+				F12 /* DMGViewModel.swift */,
+				F13 /* AboutView.swift */,
+				F14 /* AppSettings.swift */,
+				F15 /* L10n.swift */,
+				F16 /* SettingsView.swift */,
 			);
 			name = Sources;
 			sourceTree = "<group>";
 		};
-		A10022 /* Products */ = {
+		G03 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				A10001 /* SwiftPress.app */,
+				B01 /* SwiftPress.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -58,12 +67,12 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		A10030 /* SwiftPress */ = {
+		T01 /* SwiftPress */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = A10050 /* Build configuration list for PBXNativeTarget "SwiftPress" */;
+			buildConfigurationList = CL01 /* Build configuration list for PBXNativeTarget "SwiftPress" */;
 			buildPhases = (
-				A10040 /* Sources */,
-				A10041 /* Resources */,
+				PH01 /* Sources */,
+				PH02 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -71,25 +80,25 @@
 			);
 			name = SwiftPress;
 			productName = SwiftPress;
-			productReference = A10001 /* SwiftPress.app */;
+			productReference = B01 /* SwiftPress.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		A10060 /* Project object */ = {
+		PR01 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1500;
 				LastUpgradeCheck = 1500;
 				TargetAttributes = {
-					A10030 = {
+					T01 = {
 						CreatedOnToolsVersion = 15.0;
 					};
 				};
 			};
-			buildConfigurationList = A10070 /* Build configuration list for PBXProject "SwiftPress" */;
+			buildConfigurationList = CL02 /* Build configuration list for PBXProject "SwiftPress" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -97,43 +106,46 @@
 				en,
 				Base,
 			);
-			mainGroup = A10020 /* Main Group */;
-			productRefGroup = A10022 /* Products */;
+			mainGroup = G01 /* Main Group */;
+			productRefGroup = G03 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				A10030 /* SwiftPress */,
+				T01 /* SwiftPress */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		A10041 /* Resources */ = {
+		PH02 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A10006 /* Assets.xcassets in Resources */,
+				B06 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		A10040 /* Sources */ = {
+		PH01 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A10007 /* SwiftPressApp.swift in Sources */,
-				A10008 /* ContentView.swift in Sources */,
-				A10009 /* DMGViewModel.swift in Sources */,
-				A10013 /* AboutView.swift in Sources */,
+				B07 /* SwiftPressApp.swift in Sources */,
+				B08 /* ContentView.swift in Sources */,
+				B09 /* DMGViewModel.swift in Sources */,
+				B10 /* AboutView.swift in Sources */,
+				B11 /* AppSettings.swift in Sources */,
+				B12 /* L10n.swift in Sources */,
+				B13 /* SettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		A10051 /* Debug */ = {
+		C01 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -160,7 +172,7 @@
 			};
 			name = Debug;
 		};
-		A10052 /* Release */ = {
+		C02 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -187,7 +199,7 @@
 			};
 			name = Release;
 		};
-		A10071 /* Debug */ = {
+		C03 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -213,7 +225,7 @@
 			};
 			name = Debug;
 		};
-		A10072 /* Release */ = {
+		C04 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -235,20 +247,20 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		A10050 /* Build configuration list for PBXNativeTarget "SwiftPress" */ = {
+		CL01 /* Build configuration list for PBXNativeTarget "SwiftPress" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				A10051 /* Debug */,
-				A10052 /* Release */,
+				C01 /* Debug */,
+				C02 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		A10070 /* Build configuration list for PBXProject "SwiftPress" */ = {
+		CL02 /* Build configuration list for PBXProject "SwiftPress" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				A10071 /* Debug */,
-				A10072 /* Release */,
+				C03 /* Debug */,
+				C04 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -256,5 +268,5 @@
 /* End XCConfigurationList section */
 
 	};
-	rootObject = A10060 /* Project object */;
+	rootObject = PR01 /* Project object */;
 }

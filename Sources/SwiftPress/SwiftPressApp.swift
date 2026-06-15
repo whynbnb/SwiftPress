@@ -2,6 +2,8 @@ import SwiftUI
 
 @main
 struct SwiftPressApp: App {
+    @ObservedObject private var settings = AppSettings.shared
+
     init() {
         NSApplication.shared.setActivationPolicy(.regular)
     }
@@ -28,6 +30,10 @@ struct SwiftPressApp: App {
         }
         .windowResizability(.contentSize)
         .windowStyle(.titleBar)
+
+        Settings {
+            SettingsView()
+        }
     }
 }
 
