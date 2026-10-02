@@ -149,34 +149,11 @@ struct ContentView: View {
 
 /// 打开设置窗口的按钮：与菜单栏“设置…”（⌘,）功能一致。
 struct SettingsButton: View {
-    var body: some View {
-        if #available(macOS 14.0, *) {
-            ModernSettingsButton()
-        } else {
-            LegacySettingsButton()
-        }
-    }
-}
-
-@available(macOS 14.0, *)
-private struct ModernSettingsButton: View {
     @Environment(\.openSettings) private var openSettings
 
     var body: some View {
         Button {
             openSettings()
-        } label: {
-            Image(systemName: "gearshape")
-        }
-        .buttonStyle(.plain)
-        .help(L10n.tr("btn.settings"))
-    }
-}
-
-private struct LegacySettingsButton: View {
-    var body: some View {
-        Button {
-            NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
         } label: {
             Image(systemName: "gearshape")
         }

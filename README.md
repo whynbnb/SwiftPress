@@ -21,8 +21,8 @@ A simple macOS DMG installer maker built with SwiftUI.
 
 ## Requirements
 
-- macOS 13.0+
-- Xcode 15.0+
+- macOS 15.0+
+- Xcode 16.0+
 
 ## Build
 

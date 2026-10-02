@@ -2,7 +2,7 @@ import Foundation
 import AppKit
 
 /// 记录当前正在运行的子进程（hdiutil），便于退出时一并结束后台进程。
-final class ChildProcessRegistry {
+final class ChildProcessRegistry: @unchecked Sendable {
     static let shared = ChildProcessRegistry()
 
     private let lock = NSLock()
@@ -22,6 +22,12 @@ final class ChildProcessRegistry {
             running?.terminate()
         }
     }
+}
+
+/// 把非 Sendable 的值安全地传进 `@Sendable` 闭包（仅用于跨线程只读访问）。
+private final class SendableBox<Value>: @unchecked Sendable {
+    let value: Value
+    init(_ value: Value) { self.value = value }
 }
 
 @MainActor
@@ -191,9 +197,9 @@ class DMGViewModel: ObservableObject {
         process.standardError = pipe
 
         // 后台线程持续读取输出，避免管道缓冲区写满导致 hdiutil 卡死
-        let outputHandle = pipe.fileHandleForReading
+        let outputHandle = SendableBox(pipe.fileHandleForReading)
         let outputTask = Task.detached(priority: .utility) {
-            outputHandle.readDataToEndOfFile()
+            outputHandle.value.readDataToEndOfFile()
         }
 
         // 异步等待进程退出，不阻塞主线程，确保退出操作能立即响应
