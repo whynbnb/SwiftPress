@@ -160,8 +160,13 @@ struct ContentView: View {
             }
 
             if viewModel.isCreating {
-                ProgressView(value: viewModel.progress) {
-                    Text(viewModel.statusMessage)
+                HStack(spacing: 12) {
+                    ProgressView(value: viewModel.progress) {
+                        Text(viewModel.statusMessage)
+                    }
+                    Button(L10n.tr("btn.cancel")) {
+                        viewModel.cancelCreation()
+                    }
                 }
                 .padding(.horizontal)
             }

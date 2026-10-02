@@ -32,6 +32,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 }
 
 @main
+enum SwiftPressMain {
+    static func main() {
+        // 命令行模式：执行打包并退出，不启动 GUI
+        CommandLineSupport.runIfNeeded()
+        SwiftPressApp.main()
+    }
+}
+
 struct SwiftPressApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @ObservedObject private var settings = AppSettings.shared
