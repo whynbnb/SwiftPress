@@ -38,7 +38,7 @@ struct SwiftPressApp: App {
             }
         }
 
-        Window("关于 SwiftPress", id: "about") {
+        Window(L10n.tr("about.title"), id: "about") {
             AboutView()
         }
         .windowResizability(.contentSize)
@@ -54,7 +54,7 @@ struct AboutButton: View {
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
-        Button("关于 SwiftPress") {
+        Button(L10n.tr("about.title")) {
             openWindow(id: "about")
         }
     }

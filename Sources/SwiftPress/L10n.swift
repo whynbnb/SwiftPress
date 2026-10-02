@@ -7,8 +7,14 @@ enum L10n {
     }
 
     private static var localized: [String: String] {
-        let lang = UserDefaults.standard.string(forKey: "app_language") ?? "zh"
-        return lang == "en" ? en : zh
+        let stored = UserDefaults.standard.string(forKey: "app_language") ?? "zh"
+        let code: String
+        if stored == "system" {
+            code = (Locale.preferredLanguages.first ?? "en").hasPrefix("zh") ? "zh" : "en"
+        } else {
+            code = stored
+        }
+        return code == "en" ? en : zh
     }
 
     private static let zh: [String: String] = [
@@ -19,6 +25,7 @@ enum L10n {
         "output.label": "输出:",
         "output.change": "更改...",
         "btn.create": "制作 DMG",
+        "btn.settings": "设置",
         "panel.chooseApp": "选择 .app 文件",
         "panel.saveDMG": "保存 DMG",
         "status.preparing": "准备中...",
@@ -34,10 +41,13 @@ enum L10n {
         "alert.ok": "好",
         "alert.error": "错误",
         "about.subtitle": "简易 DMG 安装包制作工具",
+        "about.title": "关于 SwiftPress",
         "about.license": "开源许可:",
         "about.repo": "源码仓库:",
         "about.copyright": "Copyright © 2026 WHYBBE",
         "settings.language": "语言",
+        "settings.language.system": "跟随系统",
+        "settings.windowTitle": "SwiftPress 设置",
         "settings.appearance": "外观",
         "settings.appearance.system": "跟随系统",
         "settings.appearance.light": "浅色",
@@ -52,6 +62,7 @@ enum L10n {
         "output.label": "Output:",
         "output.change": "Change...",
         "btn.create": "Create DMG",
+        "btn.settings": "Settings",
         "panel.chooseApp": "Choose .app File",
         "panel.saveDMG": "Save DMG",
         "status.preparing": "Preparing...",
@@ -67,10 +78,13 @@ enum L10n {
         "alert.ok": "OK",
         "alert.error": "Error",
         "about.subtitle": "Simple DMG Installer Maker",
+        "about.title": "About SwiftPress",
         "about.license": "License:",
         "about.repo": "Repository:",
         "about.copyright": "Copyright © 2026 WHYBBE",
         "settings.language": "Language",
+        "settings.language.system": "System",
+        "settings.windowTitle": "SwiftPress Settings",
         "settings.appearance": "Appearance",
         "settings.appearance.system": "System",
         "settings.appearance.light": "Light",

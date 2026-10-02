@@ -5,6 +5,7 @@ class AppSettings: ObservableObject {
     static let shared = AppSettings()
 
     enum Language: String, CaseIterable {
+        case system = "system"
         case zh = "zh"
         case en = "en"
     }
