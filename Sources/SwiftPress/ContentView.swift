@@ -13,26 +13,32 @@ struct ContentView: View {
     @State private var selectedTab: Tab = .create
 
     var body: some View {
-        TabView(selection: $selectedTab) {
-            createTab
-                .tabItem {
-                    Label(L10n.tr("tab.create"), systemImage: "opticaldiscdrive")
-                }
-                .tag(Tab.create)
-
-            watchedTab
-                .tabItem {
-                    Label(L10n.tr("tab.watched"), systemImage: "eye")
-                }
-                .tag(Tab.watched)
+        Group {
+            switch selectedTab {
+            case .create:
+                createTab
+            case .watched:
+                watchedTab
+            }
         }
-        .padding()
         .frame(minWidth: 500, minHeight: 440)
-        .background(WindowDragConfigurator())
-        .overlay(alignment: .topTrailing) {
-            SettingsButton()
-                .padding(12)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Picker("", selection: $selectedTab) {
+                    Text(L10n.tr("tab.create")).tag(Tab.create)
+                    Text(L10n.tr("tab.watched")).tag(Tab.watched)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .fixedSize()
+                // 语言切换后文字长度变化，强制重建以重新布局，避免选中指示块错位/文字被裁
+                .id(settings.language)
+            }
+            ToolbarItem(placement: .primaryAction) {
+                SettingsButton()
+            }
         }
+        .background(WindowDragConfigurator())
         .preferredColorScheme(settings.resolvedColorScheme)
         .onAppear {
             watchManager.sync(with: settings.watchPaths)
@@ -335,7 +341,6 @@ struct SettingsButton: View {
         } label: {
             Image(systemName: "gearshape")
         }
-        .buttonStyle(.plain)
         .help(L10n.tr("btn.settings"))
     }
 }

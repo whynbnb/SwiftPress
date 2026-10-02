@@ -63,6 +63,12 @@ struct SwiftPressApp: App {
             CommandGroup(replacing: .appInfo) {
                 AboutButton()
             }
+            CommandGroup(replacing: .appSettings) {
+                SettingsLink {
+                    Text(L10n.tr("btn.settings"))
+                }
+                .keyboardShortcut(",", modifiers: .command)
+            }
         }
 
         Window(L10n.tr("about.title"), id: "about") {
