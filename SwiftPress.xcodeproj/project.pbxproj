@@ -15,6 +15,7 @@
 		B11 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = F14 /* AppSettings.swift */; };
 		B12 /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = F15 /* L10n.swift */; };
 		B13 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F16 /* SettingsView.swift */; };
+		B14 /* WatchManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F17 /* WatchManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -29,6 +30,7 @@
 		F14 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppSettings.swift; path = Sources/SwiftPress/AppSettings.swift; sourceTree = "<group>"; };
 		F15 /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = L10n.swift; path = Sources/SwiftPress/L10n.swift; sourceTree = "<group>"; };
 		F16 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SettingsView.swift; path = Sources/SwiftPress/SettingsView.swift; sourceTree = "<group>"; };
+		F17 /* WatchManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WatchManager.swift; path = Sources/SwiftPress/WatchManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -52,6 +54,7 @@
 				F14 /* AppSettings.swift */,
 				F15 /* L10n.swift */,
 				F16 /* SettingsView.swift */,
+				F17 /* WatchManager.swift */,
 			);
 			name = Sources;
 			sourceTree = "<group>";
@@ -139,6 +142,7 @@
 				B11 /* AppSettings.swift in Sources */,
 				B12 /* L10n.swift in Sources */,
 				B13 /* SettingsView.swift in Sources */,
+				B14 /* WatchManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

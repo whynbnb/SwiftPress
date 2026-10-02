@@ -3,8 +3,66 @@ import SwiftUI
 struct ContentView: View {
     @StateObject private var viewModel = DMGViewModel()
     @ObservedObject private var settings = AppSettings.shared
+    @ObservedObject private var watchManager = WatchManager.shared
+
+    private enum Tab: Hashable {
+        case create
+        case watched
+    }
+
+    @State private var selectedTab: Tab = .create
 
     var body: some View {
+        TabView(selection: $selectedTab) {
+            createTab
+                .tabItem {
+                    Label(L10n.tr("tab.create"), systemImage: "opticaldiscdrive")
+                }
+                .tag(Tab.create)
+
+            watchedTab
+                .tabItem {
+                    Label(L10n.tr("tab.watched"), systemImage: "eye")
+                }
+                .tag(Tab.watched)
+        }
+        .padding()
+        .frame(minWidth: 500, minHeight: 440)
+        .background(WindowDragConfigurator())
+        .overlay(alignment: .topTrailing) {
+            SettingsButton()
+                .padding(12)
+        }
+        .preferredColorScheme(settings.resolvedColorScheme)
+        .onAppear {
+            watchManager.sync(with: settings.watchPaths)
+        }
+        .onChange(of: settings.watchPaths) { _, newValue in
+            watchManager.sync(with: newValue)
+        }
+        .alert(L10n.tr("alert.success"), isPresented: $viewModel.showSuccess) {
+            Button(L10n.tr("alert.showInFinder")) {
+                if let url = viewModel.outputURL {
+                    NSWorkspace.shared.activateFileViewerSelecting([url])
+                }
+            }
+            Button(L10n.tr("alert.ok")) {}
+        } message: {
+            Text(L10n.tr("alert.success.msg", viewModel.outputURL?.lastPathComponent ?? ""))
+        }
+        .alert(L10n.tr("alert.error"), isPresented: .init(
+            get: { viewModel.errorMessage != nil },
+            set: { if !$0 { viewModel.errorMessage = nil } }
+        )) {
+            Button(L10n.tr("alert.ok")) {}
+        } message: {
+            Text(viewModel.errorMessage ?? "")
+        }
+    }
+
+    // MARK: - 制作（默认功能）
+
+    private var createTab: some View {
         VStack(spacing: 20) {
             Text(L10n.tr("app.title"))
                 .font(.title)
@@ -120,30 +178,145 @@ struct ContentView: View {
             .padding(.horizontal)
         }
         .padding()
-        .frame(minWidth: 460, minHeight: 360)
-        .overlay(alignment: .topTrailing) {
-            SettingsButton()
-                .padding(12)
-        }
-        .preferredColorScheme(settings.resolvedColorScheme)
-        .alert(L10n.tr("alert.success"), isPresented: $viewModel.showSuccess) {
-            Button(L10n.tr("alert.showInFinder")) {
-                if let url = viewModel.outputURL {
-                    NSWorkspace.shared.activateFileViewerSelecting([url])
+    }
+
+    // MARK: - 监听发现
+
+    private var watchedTab: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                Image(systemName: "eye")
+                    .foregroundColor(.secondary)
+                Text(L10n.tr("watch.title"))
+                    .font(.headline)
+                Spacer()
+                if watchManager.isScanning {
+                    ProgressView()
+                        .controlSize(.small)
+                }
+                Text("\(watchManager.discovered.count)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                if watchManager.monitoredCount > 0 {
+                    Text(L10n.tr("watch.monitoring", watchManager.monitoredCount))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                if watchManager.eventCount > 0 {
+                    Text(L10n.tr("watch.events", watchManager.eventCount))
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+                Button {
+                    watchManager.refresh()
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                }
+                .buttonStyle(.borderless)
+                .help(L10n.tr("watch.refresh"))
+            }
+
+            if watchManager.discovered.isEmpty {
+                VStack(spacing: 10) {
+                    Image(systemName: "eye.slash")
+                        .font(.system(size: 36))
+                        .foregroundColor(.secondary)
+                    Text(L10n.tr("watch.empty"))
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+                    Text(watchManager.monitoredCount == 0
+                         ? L10n.tr("watch.empty.hint")
+                         : L10n.tr("watch.empty.monitoring", watchManager.monitoredCount))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    if watchManager.monitoredCount > 0 {
+                        VStack(spacing: 3) {
+                            ForEach(watchManager.monitoredPaths, id: \.self) { path in
+                                HStack(spacing: 4) {
+                                    Image(systemName: watchManager.unreadablePaths.contains(path)
+                                          ? "exclamationmark.triangle.fill"
+                                          : "folder")
+                                        .font(.caption2)
+                                        .foregroundColor(watchManager.unreadablePaths.contains(path) ? .orange : .secondary)
+                                    Text(path)
+                                        .font(.caption2)
+                                        .foregroundColor(.secondary)
+                                        .lineLimit(1)
+                                        .truncationMode(.middle)
+                                }
+                            }
+                        }
+                        .padding(.top, 4)
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                ScrollView {
+                    VStack(spacing: 4) {
+                        ForEach(watchManager.discovered) { item in
+                            watchedRow(item)
+                        }
+                    }
                 }
             }
-            Button(L10n.tr("alert.ok")) {}
-        } message: {
-            Text(L10n.tr("alert.success.msg", viewModel.outputURL?.lastPathComponent ?? ""))
         }
-        .alert(L10n.tr("alert.error"), isPresented: .init(
-            get: { viewModel.errorMessage != nil },
-            set: { if !$0 { viewModel.errorMessage = nil } }
-        )) {
-            Button(L10n.tr("alert.ok")) {}
-        } message: {
-            Text(viewModel.errorMessage ?? "")
+        .padding()
+    }
+
+    private func watchedRow(_ item: DiscoveredApp) -> some View {
+        Button {
+            watchManager.select(item.id)
+            viewModel.setApp(item.url)
+            selectedTab = .create
+        } label: {
+            HStack(spacing: 10) {
+                Image(nsImage: NSWorkspace.shared.icon(forFile: item.url.path))
+                    .resizable()
+                    .frame(width: 32, height: 32)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 6) {
+                        Text(item.name)
+                            .font(.headline)
+                            .lineLimit(1)
+                        if !item.version.isEmpty {
+                            Text("v\(item.version)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        if watchManager.newIDs.contains(item.id) {
+                            Text(L10n.tr("watch.new"))
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 1)
+                                .background(Capsule().fill(Color.accentColor))
+                        }
+                    }
+                    Text(item.url.path)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
+
+                Spacer(minLength: 0)
+            }
+            .padding(8)
+            .contentShape(Rectangle())
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(watchManager.selectedID == item.id
+                          ? Color.accentColor.opacity(0.22)
+                          : Color(nsColor: .controlBackgroundColor))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+            )
         }
+        .buttonStyle(.plain)
     }
 }
 
@@ -159,5 +332,18 @@ struct SettingsButton: View {
         }
         .buttonStyle(.plain)
         .help(L10n.tr("btn.settings"))
+    }
+}
+
+/// 允许按住窗口背景（含页签栏等非控件区域）拖动窗口。
+private struct WindowDragConfigurator: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async { view.window?.isMovableByWindowBackground = true }
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        DispatchQueue.main.async { nsView.window?.isMovableByWindowBackground = true }
     }
 }

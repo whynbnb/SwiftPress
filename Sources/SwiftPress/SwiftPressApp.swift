@@ -1,9 +1,28 @@
 import SwiftUI
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    private var mouseMonitor: Any?
+
     // 关闭最后一个窗口后直接退出，不在 Dock 中残留
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         true
+    }
+
+    // 启动即扫描一次，确保已有文件立刻出现在监听列表中
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        WatchManager.shared.sync(with: AppSettings.shared.watchPaths)
+        // 鼠标按下时立即激活 App 并使窗口成为 key，避免"第一下点击只用于激活、第二下才生效"
+        mouseMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown]) { event in
+            MainActor.assumeIsolated {
+                if !NSApp.isActive {
+                    NSApp.activate(ignoringOtherApps: true)
+                }
+                if let window = event.window, !window.isKeyWindow {
+                    window.makeKey()
+                }
+            }
+            return event
+        }
     }
 
     // 退出时确保结束正在运行的 hdiutil 子进程，避免后台残留
@@ -31,7 +50,7 @@ struct SwiftPressApp: App {
                 }
         }
         .windowStyle(.titleBar)
-        .defaultSize(width: 520, height: 400)
+        .defaultSize(width: 560, height: 600)
         .commands {
             CommandGroup(replacing: .appInfo) {
                 AboutButton()
