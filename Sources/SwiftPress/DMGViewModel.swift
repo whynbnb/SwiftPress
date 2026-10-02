@@ -1,6 +1,29 @@
 import Foundation
 import AppKit
 
+/// 记录当前正在运行的子进程（hdiutil），便于退出时一并结束后台进程。
+final class ChildProcessRegistry {
+    static let shared = ChildProcessRegistry()
+
+    private let lock = NSLock()
+    private var process: Process?
+
+    func set(_ process: Process?) {
+        lock.lock()
+        self.process = process
+        lock.unlock()
+    }
+
+    func terminate() {
+        lock.lock()
+        let running = process
+        lock.unlock()
+        if running?.isRunning == true {
+            running?.terminate()
+        }
+    }
+}
+
 @MainActor
 class DMGViewModel: ObservableObject {
     @Published var appURL: URL?
@@ -167,15 +190,33 @@ class DMGViewModel: ObservableObject {
         process.standardOutput = pipe
         process.standardError = pipe
 
-        try process.run()
-        process.waitUntilExit()
+        // 后台线程持续读取输出，避免管道缓冲区写满导致 hdiutil 卡死
+        let outputHandle = pipe.fileHandleForReading
+        let outputTask = Task.detached(priority: .utility) {
+            outputHandle.readDataToEndOfFile()
+        }
 
-        if process.terminationStatus != 0 {
-            let errorData = pipe.fileHandleForReading.readDataToEndOfFile()
+        // 异步等待进程退出，不阻塞主线程，确保退出操作能立即响应
+        let status: Int32 = try await withCheckedThrowingContinuation { continuation in
+            process.terminationHandler = { proc in
+                continuation.resume(returning: proc.terminationStatus)
+            }
+            do {
+                try process.run()
+                ChildProcessRegistry.shared.set(process)
+            } catch {
+                continuation.resume(throwing: error)
+            }
+        }
+
+        ChildProcessRegistry.shared.set(nil)
+        let errorData = await outputTask.value
+
+        if status != 0 {
             let errorMsg = String(data: errorData, encoding: .utf8) ?? "Unknown error"
             throw NSError(
                 domain: "SwiftPress",
-                code: Int(process.terminationStatus),
+                code: Int(status),
                 userInfo: [NSLocalizedDescriptionKey: "hdiutil failed:\n\(errorMsg)"]
             )
         }

@@ -1,7 +1,20 @@
 import SwiftUI
 
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    // 关闭最后一个窗口后直接退出，不在 Dock 中残留
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        true
+    }
+
+    // 退出时确保结束正在运行的 hdiutil 子进程，避免后台残留
+    func applicationWillTerminate(_ notification: Notification) {
+        ChildProcessRegistry.shared.terminate()
+    }
+}
+
 @main
 struct SwiftPressApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @ObservedObject private var settings = AppSettings.shared
 
     init() {
