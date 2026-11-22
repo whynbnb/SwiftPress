@@ -452,11 +452,11 @@ struct ContentView: View {
 
 /// 打开设置窗口的按钮：与菜单栏“设置…”（⌘,）功能一致。
 struct SettingsButton: View {
-    @Environment(\.openSettings) private var openSettings
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         Button {
-            openSettings()
+            openWindow(id: "settings")
         } label: {
             Image(systemName: "gearshape")
         }

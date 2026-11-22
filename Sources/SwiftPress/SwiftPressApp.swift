@@ -64,10 +64,7 @@ struct SwiftPressApp: App {
                 AboutButton()
             }
             CommandGroup(replacing: .appSettings) {
-                SettingsLink {
-                    Text(L10n.tr("btn.settings"))
-                }
-                .keyboardShortcut(",", modifiers: .command)
+                SettingsMenuButton()
             }
         }
 
@@ -77,9 +74,11 @@ struct SwiftPressApp: App {
         .windowResizability(.contentSize)
         .windowStyle(.titleBar)
 
-        Settings {
+        Window(L10n.tr("settings.windowTitle"), id: "settings") {
             SettingsView()
         }
+        .windowResizability(.contentSize)
+        .windowStyle(.titleBar)
     }
 }
 
@@ -90,5 +89,17 @@ struct AboutButton: View {
         Button(L10n.tr("about.title")) {
             openWindow(id: "about")
         }
+    }
+}
+
+/// 自定义「设置…」菜单项，避免 SettingsLink 与系统默认项同时出现。
+struct SettingsMenuButton: View {
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        Button(L10n.tr("menu.settings")) {
+            openWindow(id: "settings")
+        }
+        .keyboardShortcut(",", modifiers: .command)
     }
 }
