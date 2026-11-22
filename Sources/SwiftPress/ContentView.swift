@@ -11,6 +11,8 @@ struct ContentView: View {
     }
 
     @State private var selectedTab: Tab = .create
+    /// 高级设置的展开状态，默认折叠并持久化。
+    @AppStorage("advanced_settings_expanded") private var advancedExpanded = false
 
     var body: some View {
         Group {
@@ -54,7 +56,8 @@ struct ContentView: View {
             }
             Button(L10n.tr("alert.ok")) {}
         } message: {
-            Text(L10n.tr("alert.success.msg", viewModel.outputURL?.lastPathComponent ?? ""))
+            Text(L10n.tr("alert.success.msg", viewModel.outputURL?.lastPathComponent ?? "")
+                + (viewModel.warningMessage.map { "\n\n" + $0 } ?? ""))
         }
         .alert(L10n.tr("alert.error"), isPresented: .init(
             get: { viewModel.errorMessage != nil },
@@ -69,126 +72,242 @@ struct ContentView: View {
     // MARK: - 制作（默认功能）
 
     private var createTab: some View {
-        VStack(spacing: 20) {
-            Text(L10n.tr("app.title"))
-                .font(.title)
-                .fontWeight(.bold)
+        ScrollView {
+            VStack(spacing: 20) {
+                Text(L10n.tr("app.title"))
+                    .font(.title)
+                    .fontWeight(.bold)
 
-            Text(L10n.tr("app.subtitle"))
-                .font(.subheadline)
-                .foregroundColor(.secondary)
+                Text(L10n.tr("app.subtitle"))
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
 
-            VStack(spacing: 12) {
-                if let appURL = viewModel.appURL {
-                    HStack {
-                        Image(nsImage: NSWorkspace.shared.icon(forFile: appURL.path))
-                            .resizable()
-                            .frame(width: 48, height: 48)
-                        VStack(alignment: .leading) {
-                            Text(appURL.deletingPathExtension().lastPathComponent)
+                VStack(spacing: 12) {
+                    if let appURL = viewModel.appURL {
+                        HStack {
+                            Image(nsImage: NSWorkspace.shared.icon(forFile: appURL.path))
+                                .resizable()
+                                .frame(width: 48, height: 48)
+                            VStack(alignment: .leading) {
+                                Text(appURL.deletingPathExtension().lastPathComponent)
+                                    .font(.headline)
+                                Text(appURL.path)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(1)
+                                    .truncationMode(.middle)
+                            }
+                            Spacer()
+                            Button {
+                                viewModel.clearApp()
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(.secondary)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .padding(8)
+                        .background(RoundedRectangle(cornerRadius: 8).fill(Color(nsColor: .controlBackgroundColor)))
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color(nsColor: .separatorColor), lineWidth: 1))
+                    } else {
+                        VStack(spacing: 8) {
+                            Image(systemName: "arrow.down.doc.fill")
+                                .font(.system(size: 36))
+                                .foregroundColor(.secondary)
+                            Text(L10n.tr("drop.hint"))
                                 .font(.headline)
-                            Text(appURL.path)
-                                .font(.caption)
                                 .foregroundColor(.secondary)
-                                .lineLimit(1)
-                                .truncationMode(.middle)
+                            Button(L10n.tr("drop.browse")) {
+                                viewModel.chooseApp()
+                            }
                         }
-                        Spacer()
-                        Button {
-                            viewModel.clearApp()
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 24)
+                        .background(RoundedRectangle(cornerRadius: 8).fill(Color(nsColor: .controlBackgroundColor)))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .strokeBorder(style: StrokeStyle(lineWidth: 2, dash: [8]))
                                 .foregroundColor(.secondary)
+                        )
+                    }
+                }
+                .onDrop(of: [.fileURL], isTargeted: nil) { providers in
+                    guard let provider = providers.first else { return false }
+                    provider.loadItem(forTypeIdentifier: "public.file-url", options: nil) { data, _ in
+                        guard let data = data as? Data,
+                              let url = URL(dataRepresentation: data, relativeTo: nil),
+                              url.pathExtension == "app" else { return }
+                        Task { @MainActor in
+                            viewModel.setApp(url)
                         }
-                        .buttonStyle(.plain)
+                    }
+                    return true
+                }
+
+                if viewModel.appURL != nil {
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            Text(L10n.tr("output.label"))
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                            Text(viewModel.defaultOutputName)
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                            Spacer()
+                            Button(L10n.tr("output.change")) {
+                                viewModel.chooseOutput()
+                            }
+                        }
+                        Text(viewModel.outputURL?.deletingLastPathComponent().path ?? "")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
                     }
                     .padding(8)
                     .background(RoundedRectangle(cornerRadius: 8).fill(Color(nsColor: .controlBackgroundColor)))
                     .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color(nsColor: .separatorColor), lineWidth: 1))
-                } else {
-                    VStack(spacing: 8) {
-                        Image(systemName: "arrow.down.doc.fill")
-                            .font(.system(size: 36))
-                            .foregroundColor(.secondary)
-                        Text(L10n.tr("drop.hint"))
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                        Button(L10n.tr("drop.browse")) {
-                            viewModel.chooseApp()
+                }
+
+                advancedSettings
+                    .disabled(viewModel.isCreating)
+
+                if viewModel.isCreating {
+                    HStack(spacing: 12) {
+                        ProgressView(value: viewModel.progress) {
+                            Text(viewModel.statusMessage)
+                        }
+                        Button(L10n.tr("btn.cancel")) {
+                            viewModel.cancelCreation()
                         }
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 24)
-                    .background(RoundedRectangle(cornerRadius: 8).fill(Color(nsColor: .controlBackgroundColor)))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .strokeBorder(style: StrokeStyle(lineWidth: 2, dash: [8]))
-                            .foregroundColor(.secondary)
-                    )
+                    .padding(.horizontal)
                 }
-            }
-            .onDrop(of: [.fileURL], isTargeted: nil) { providers in
-                guard let provider = providers.first else { return false }
-                provider.loadItem(forTypeIdentifier: "public.file-url", options: nil) { data, _ in
-                    guard let data = data as? Data,
-                          let url = URL(dataRepresentation: data, relativeTo: nil),
-                          url.pathExtension == "app" else { return }
-                    Task { @MainActor in
-                        viewModel.setApp(url)
-                    }
-                }
-                return true
-            }
 
-            if viewModel.appURL != nil {
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack {
-                        Text(L10n.tr("output.label"))
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        Text(viewModel.defaultOutputName)
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                        Spacer()
-                        Button(L10n.tr("output.change")) {
-                            viewModel.chooseOutput()
-                        }
-                    }
-                    Text(viewModel.outputURL?.deletingLastPathComponent().path ?? "")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
+                Button {
+                    viewModel.createDMG()
+                } label: {
+                    Label(L10n.tr("btn.create"), systemImage: "opticaldiscdrive")
+                        .frame(maxWidth: .infinity)
                 }
-                .padding(8)
-                .background(RoundedRectangle(cornerRadius: 8).fill(Color(nsColor: .controlBackgroundColor)))
-                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color(nsColor: .separatorColor), lineWidth: 1))
-            }
-
-            if viewModel.isCreating {
-                HStack(spacing: 12) {
-                    ProgressView(value: viewModel.progress) {
-                        Text(viewModel.statusMessage)
-                    }
-                    Button(L10n.tr("btn.cancel")) {
-                        viewModel.cancelCreation()
-                    }
-                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .disabled(viewModel.appURL == nil || viewModel.isCreating)
                 .padding(.horizontal)
             }
-
-            Button {
-                viewModel.createDMG()
-            } label: {
-                Label(L10n.tr("btn.create"), systemImage: "opticaldiscdrive")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            .disabled(viewModel.appURL == nil || viewModel.isCreating)
-            .padding(.horizontal)
+            .frame(maxWidth: .infinity)
+            .padding()
         }
-        .padding()
+    }
+
+    private var advancedSettings: some View {
+        DisclosureGroup(isExpanded: $advancedExpanded) {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(spacing: 8) {
+                    Text(L10n.tr("settings.dmgIcon.title"))
+                    Spacer()
+                    Picker("", selection: $settings.dmgIconPreset) {
+                        ForEach(DMGIconPreset.allCases, id: \.self) { preset in
+                            Text(preset.title).tag(preset)
+                        }
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.menu)
+                    .frame(width: 130)
+
+                    Button {
+                        settings.dmgIconPreset = .medium
+                        settings.dmgIconSize = DMGIconPreferences.defaultSize
+                    } label: {
+                        Image(systemName: "arrow.counterclockwise")
+                    }
+                    .buttonStyle(.borderless)
+                    .help(L10n.tr("advanced.reset"))
+
+                    Button {
+                        settings.dmgIconPreset = .unset
+                    } label: {
+                        Image(systemName: "nosign")
+                    }
+                    .buttonStyle(.borderless)
+                    .help(L10n.tr("advanced.unset"))
+                    .disabled(settings.dmgIconPreset == .unset)
+                }
+
+                if settings.dmgIconPreset == .custom {
+                    Stepper(value: $settings.dmgIconSize, in: DMGIconPreferences.sizeRange) {
+                        Text("\(L10n.tr("settings.dmgIcon.size")): \(settings.dmgIconSize)")
+                            .monospacedDigit()
+                    }
+                    .font(.callout)
+                }
+
+                Divider()
+
+                HStack(spacing: 8) {
+                    Text(L10n.tr("settings.dmgWindow.title"))
+                    Spacer()
+                    Picker("", selection: $settings.dmgWindowPreset) {
+                        ForEach(DMGWindowPreset.allCases, id: \.self) { preset in
+                            Text(preset.title).tag(preset)
+                        }
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.menu)
+                    .frame(width: 170)
+
+                    Button {
+                        settings.dmgWindowPreset = .medium
+                        settings.dmgWindowWidth = DMGWindowPreferences.defaultWidth
+                        settings.dmgWindowHeight = DMGWindowPreferences.defaultHeight
+                    } label: {
+                        Image(systemName: "arrow.counterclockwise")
+                    }
+                    .buttonStyle(.borderless)
+                    .help(L10n.tr("advanced.reset"))
+
+                    Button {
+                        settings.dmgWindowPreset = .unset
+                    } label: {
+                        Image(systemName: "nosign")
+                    }
+                    .buttonStyle(.borderless)
+                    .help(L10n.tr("advanced.unset"))
+                    .disabled(settings.dmgWindowPreset == .unset)
+                }
+
+                if settings.dmgWindowPreset == .custom {
+                    HStack(spacing: 16) {
+                        Stepper(value: $settings.dmgWindowWidth, in: DMGWindowPreferences.widthRange) {
+                            Text("\(L10n.tr("settings.dmgWindow.width")): \(settings.dmgWindowWidth)")
+                                .monospacedDigit()
+                        }
+                        Stepper(value: $settings.dmgWindowHeight, in: DMGWindowPreferences.heightRange) {
+                            Text("\(L10n.tr("settings.dmgWindow.height")): \(settings.dmgWindowHeight)")
+                                .monospacedDigit()
+                        }
+                    }
+                    .font(.callout)
+                }
+
+            }
+            .padding(.top, 10)
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "slider.horizontal.3")
+                    .foregroundColor(.secondary)
+                Text(L10n.tr("advanced.title"))
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                Spacer()
+                Image(systemName: "info.circle")
+                    .foregroundColor(.secondary)
+                    .help(L10n.tr("advanced.hint"))
+            }
+        }
+        .padding(10)
+        .background(RoundedRectangle(cornerRadius: 8).fill(Color(nsColor: .controlBackgroundColor)))
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color(nsColor: .separatorColor), lineWidth: 1))
     }
 
     // MARK: - 监听发现

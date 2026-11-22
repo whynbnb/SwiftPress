@@ -16,6 +16,7 @@
 		B12 /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = F15 /* L10n.swift */; };
 		B13 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F16 /* SettingsView.swift */; };
 		B14 /* WatchManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F17 /* WatchManager.swift */; };
+		B15 /* dmg-layout.dsstore in Resources */ = {isa = PBXBuildFile; fileRef = B16 /* dmg-layout.dsstore */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -23,6 +24,7 @@
 		B03 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = Sources/SwiftPress/Resources/Assets.xcassets; sourceTree = "<group>"; };
 		B04 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B05 /* SwiftPress.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SwiftPress.entitlements; sourceTree = "<group>"; };
+		B16 /* dmg-layout.dsstore */ = {isa = PBXFileReference; lastKnownFileType = file; name = "dmg-layout.dsstore"; path = "Sources/SwiftPress/Resources/dmg-layout.dsstore"; sourceTree = "<group>"; };
 		F10 /* SwiftPressApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SwiftPressApp.swift; path = Sources/SwiftPress/SwiftPressApp.swift; sourceTree = "<group>"; };
 		F11 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ContentView.swift; path = Sources/SwiftPress/ContentView.swift; sourceTree = "<group>"; };
 		F12 /* DMGViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DMGViewModel.swift; path = Sources/SwiftPress/DMGViewModel.swift; sourceTree = "<group>"; };
@@ -39,6 +41,7 @@
 			children = (
 				G02 /* Sources */,
 				B03 /* Assets.xcassets */,
+				B16 /* dmg-layout.dsstore */,
 				B04 /* Info.plist */,
 				B05 /* SwiftPress.entitlements */,
 			);
@@ -125,6 +128,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B06 /* Assets.xcassets in Resources */,
+				B15 /* dmg-layout.dsstore in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

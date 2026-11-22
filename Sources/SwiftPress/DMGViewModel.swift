@@ -24,12 +24,6 @@ final class ChildProcessRegistry: @unchecked Sendable {
     }
 }
 
-/// 把非 Sendable 的值安全地传进 `@Sendable` 闭包（仅用于跨线程只读访问）。
-private final class SendableBox<Value>: @unchecked Sendable {
-    let value: Value
-    init(_ value: Value) { self.value = value }
-}
-
 /// 应用信息工具（GUI 与 CLI 共用）。
 enum AppInfo {
     /// 从 `Contents/Info.plist` 读取版本号，读不到返回 "development"。
@@ -74,6 +68,7 @@ class DMGViewModel: ObservableObject {
     @Published var statusMessage: String = ""
     @Published var showSuccess: Bool = false
     @Published var errorMessage: String?
+    @Published var warningMessage: String?
 
     private var creationTask: Task<Void, Never>?
 
@@ -126,33 +121,43 @@ class DMGViewModel: ObservableObject {
         progress = 0
         statusMessage = L10n.tr("status.preparing")
         errorMessage = nil
+        warningMessage = nil
 
         let dmgPath = outputURL.path
         let appName = appURL.lastPathComponent
         let volumeName = outputURL.deletingPathExtension().lastPathComponent
+        let windowSize = DMGWindowPreferences.currentSize
+        let iconSize = DMGIconPreferences.currentSize
         let tempDir = FileManager.default.temporaryDirectory
             .appendingPathComponent("swiftpress_\(UUID().uuidString)")
 
         creationTask = Task { [weak self] in
             guard let self else { return }
             do {
-                try await Self.performCreation(
+                let warning = try await Self.performCreation(
                     appURL: appURL,
                     outputPath: dmgPath,
                     appName: appName,
                     volumeName: volumeName,
+                    windowSize: windowSize,
+                    iconSize: iconSize,
                     tempDir: tempDir
                 ) { message, value in
                     await self.updateStatus(message, progress: value)
                 }
-                self.finishSuccess()
+                self.finishSuccess(warning: warning)
             } catch is CancellationError {
                 try? FileManager.default.removeItem(at: tempDir)
                 ChildProcessRegistry.shared.terminate()
                 self.finishCancelled()
             } catch {
                 try? FileManager.default.removeItem(at: tempDir)
-                self.finishFailure(error)
+                ChildProcessRegistry.shared.terminate()
+                if Task.isCancelled {
+                    self.finishCancelled()
+                } else {
+                    self.finishFailure(error)
+                }
             }
         }
     }
@@ -165,9 +170,10 @@ class DMGViewModel: ObservableObject {
         creationTask?.cancel()
     }
 
-    private func finishSuccess() {
+    private func finishSuccess(warning: String?) {
         isCreating = false
         progress = 1.0
+        warningMessage = warning
         showSuccess = true
     }
 
@@ -194,9 +200,11 @@ class DMGViewModel: ObservableObject {
         outputPath: String,
         appName: String,
         volumeName: String,
+        windowSize: (width: Int, height: Int)?,
+        iconSize: Int?,
         tempDir: URL,
         report: @escaping @Sendable (String, Double) async -> Void
-    ) async throws {
+    ) async throws -> String? {
         let fileManager = FileManager.default
 
         try fileManager.createDirectory(at: tempDir, withIntermediateDirectories: true)
@@ -210,7 +218,7 @@ class DMGViewModel: ObservableObject {
         try fileManager.copyItem(at: appURL, to: staging.appendingPathComponent(appName))
         try Task.checkCancellation()
 
-        await report(L10n.tr("status.symlink"), 0.5)
+        await report(L10n.tr("status.symlink"), 0.4)
         let applicationsAlias = staging.appendingPathComponent("Applications")
         if fileManager.fileExists(atPath: applicationsAlias.path) {
             try fileManager.removeItem(at: applicationsAlias)
@@ -220,73 +228,166 @@ class DMGViewModel: ObservableObject {
             withDestinationPath: "/Applications"
         )
 
-        await report(L10n.tr("status.creating"), 0.6)
-        try await createDMGWithHdiutil(
+        var warning: String?
+
+        // 直接把窗口/图标布局写进 .DS_Store，不调用 Finder，也不会弹出任何窗口。
+        await report(L10n.tr("status.layout"), 0.5)
+        do {
+            try DMGLayout.writeDSStore(
+                to: staging,
+                windowSize: windowSize,
+                iconSize: iconSize
+            )
+        } catch {
+            warning = L10n.tr("warning.windowLayout")
+        }
+
+        try Task.checkCancellation()
+        await report(L10n.tr("status.creating"), 0.7)
+        try DMGImageBuilder.createCompressedImage(
             stagingPath: staging.path,
             outputPath: outputPath,
             volumeName: volumeName
         )
 
         try Task.checkCancellation()
-        await report(L10n.tr("status.cleaning"), 0.9)
+        await report(L10n.tr("status.cleaning"), 0.95)
         try? fileManager.removeItem(at: tempDir)
         await report(L10n.tr("status.done"), 1.0)
+        return warning
+    }
+}
+
+/// 生成 DMG 的系统命令封装（hdiutil），GUI 与 CLI 共用。
+enum DMGImageBuilder {
+    struct CommandError: LocalizedError {
+        let message: String
+        var errorDescription: String? { message }
     }
 
-    private nonisolated static func createDMGWithHdiutil(
-        stagingPath: String,
-        outputPath: String,
-        volumeName: String
-    ) async throws {
+    /// 运行命令并返回标准输出；命令失败或任务被取消时抛错。
+    static func run(_ executable: String, _ arguments: [String], register: Bool = true) throws -> Data {
         let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/hdiutil")
-        process.arguments = [
-            "create",
-            "-volname", volumeName,
-            "-srcfolder", stagingPath,
-            "-ov",
-            "-format", "UDZO",
-            outputPath
-        ]
+        process.executableURL = URL(fileURLWithPath: executable)
+        process.arguments = arguments
 
-        let pipe = Pipe()
-        process.standardOutput = pipe
-        process.standardError = pipe
+        let outPipe = Pipe()
+        let errPipe = Pipe()
+        process.standardOutput = outPipe
+        process.standardError = errPipe
 
-        // 后台线程持续读取输出，避免管道缓冲区写满导致 hdiutil 卡死
-        let outputHandle = SendableBox(pipe.fileHandleForReading)
-        let outputTask = Task.detached(priority: .utility) {
-            outputHandle.value.readDataToEndOfFile()
-        }
+        try process.run()
+        if register { ChildProcessRegistry.shared.set(process) }
 
-        // 异步等待进程退出，不阻塞主线程，确保退出/取消能立即响应
-        let status: Int32 = try await withCheckedThrowingContinuation { continuation in
-            process.terminationHandler = { proc in
-                continuation.resume(returning: proc.terminationStatus)
-            }
-            do {
-                try process.run()
-                ChildProcessRegistry.shared.set(process)
-            } catch {
-                continuation.resume(throwing: error)
-            }
-        }
-
-        ChildProcessRegistry.shared.set(nil)
-        let errorData = await outputTask.value
+        let outData = outPipe.fileHandleForReading.readDataToEndOfFile()
+        let errData = errPipe.fileHandleForReading.readDataToEndOfFile()
+        process.waitUntilExit()
+        if register { ChildProcessRegistry.shared.set(nil) }
 
         if Task.isCancelled {
             throw CancellationError()
         }
 
-        if status != 0 {
-            let errorMsg = String(data: errorData, encoding: .utf8) ?? "Unknown error"
-            throw NSError(
-                domain: "SwiftPress",
-                code: Int(status),
-                userInfo: [NSLocalizedDescriptionKey: "hdiutil failed:\n\(errorMsg)"]
+        guard process.terminationStatus == 0 else {
+            let stderr = String(data: errData, encoding: .utf8)?
+                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            throw CommandError(
+                message: stderr.isEmpty
+                    ? "\(executable) exited with status \(process.terminationStatus)"
+                    : stderr
             )
         }
+        return outData
+    }
+
+    /// 创建压缩（UDZO）镜像。
+    static func createCompressedImage(stagingPath: String, outputPath: String, volumeName: String) throws {
+        _ = try run("/usr/bin/hdiutil", [
+            "create",
+            "-volname", volumeName,
+            "-srcfolder", stagingPath,
+            "-fs", "HFS+",
+            "-ov",
+            "-format", "UDZO",
+            outputPath
+        ])
+    }
+}
+
+/// 直接写入 `.DS_Store`，让 DMG 打开时呈现干净的安装器布局。
+///
+/// 使用一份由 Finder 生成的空白卷模板（隐藏工具栏/侧栏/状态栏、图标按名称排列），
+/// 打包时只替换窗口尺寸和图标大小。整个流程不调用 Finder，因此不会弹窗、也不需要自动化权限。
+enum DMGLayout {
+    enum LayoutError: LocalizedError {
+        case templateMissing
+        case invalidTemplate
+
+        var errorDescription: String? {
+            switch self {
+            case .templateMissing: return "找不到 DMG 布局模板"
+            case .invalidTemplate: return "DMG 布局模板无效"
+            }
+        }
+    }
+
+    /// 模板中由 Finder 写入的原始值，替换时要求长度一致。
+    private static let templateBounds = "{{200, -40}, {1000, 1000}}"
+    private static let templateIconSize = 76.0
+
+    static func writeDSStore(
+        to directory: URL,
+        windowSize: (width: Int, height: Int)?,
+        iconSize: Int?
+    ) throws {
+        guard let url = templateURL, var data = try? Data(contentsOf: url) else {
+            throw LayoutError.templateMissing
+        }
+
+        if let windowSize {
+            // .DS_Store 的 WindowBounds 使用左下角原点；换算成距顶部 120pt。
+            let screenHeight = Int(CGDisplayBounds(CGMainDisplayID()).height)
+            let bottomY = max(0, min(screenHeight - 120 - windowSize.height, 999))
+            let bounds = "{{200, \(String(format: "%3d", bottomY))}, {\(padded(windowSize.width)), \(padded(windowSize.height))}}"
+            guard bounds.utf8.count == templateBounds.utf8.count,
+                  let boundsRange = data.range(of: Data(templateBounds.utf8)) else {
+                throw LayoutError.invalidTemplate
+            }
+            data.replaceSubrange(boundsRange, with: Data(bounds.utf8))
+        } else {
+            // 不设置窗口大小：把键名改成同长度的未知键，Finder 会回落默认尺寸。
+            let key = Data("WindowBounds".utf8)
+            guard let keyRange = data.range(of: key) else {
+                throw LayoutError.invalidTemplate
+            }
+            data.replaceSubrange(keyRange, with: Data("WindowBoundX".utf8))
+        }
+
+        // 不设置图标大小时使用 Finder 默认值，同时保留按名称排列等视图设置。
+        let effectiveIconSize = iconSize ?? DMGIconPreferences.unsetFallbackSize
+        var oldIconBits = templateIconSize.bitPattern.bigEndian
+        let oldIconData = withUnsafeBytes(of: &oldIconBits) { Data($0) }
+        guard let iconRange = data.range(of: oldIconData) else {
+            throw LayoutError.invalidTemplate
+        }
+        var newIconBits = Double(effectiveIconSize).bitPattern.bigEndian
+        let newIconData = withUnsafeBytes(of: &newIconBits) { Data($0) }
+        data.replaceSubrange(iconRange, with: newIconData)
+
+        try data.write(to: directory.appendingPathComponent(".DS_Store"))
+    }
+
+    /// 4 位宽、空格补位，保证替换后的字符串与模板等长。
+    private static func padded(_ value: Int) -> String {
+        String(format: "%4d", value)
+    }
+
+    private static var templateURL: URL? {
+        #if SWIFT_PACKAGE
+        Bundle.module.url(forResource: "dmg-layout", withExtension: "dsstore")
+        #else
+        Bundle.main.url(forResource: "dmg-layout", withExtension: "dsstore")
+        #endif
     }
 }
 
@@ -349,7 +450,10 @@ enum CommandLineSupport {
         let outputURL = outputPath.map(fileURL) ?? AppInfo.defaultOutputURL(for: appURL)
 
         do {
-            try create(app: appURL, output: outputURL)
+            let warning = try create(app: appURL, output: outputURL)
+            if let warning {
+                print("⚠️ \(warning)")
+            }
             print("✅ 已生成 \(outputURL.path)")
             exit(0)
         } catch {
@@ -380,7 +484,7 @@ enum CommandLineSupport {
         exit(1)
     }
 
-    private static func create(app: URL, output: URL) throws {
+    private static func create(app: URL, output: URL) throws -> String? {
         let fileManager = FileManager.default
         let volumeName = output.deletingPathExtension().lastPathComponent
         let tempDir = fileManager.temporaryDirectory
@@ -401,28 +505,22 @@ enum CommandLineSupport {
             withDestinationPath: "/Applications"
         )
 
-        try runHdiutil(staging: staging.path, output: output.path, volumeName: volumeName)
-    }
-
-    private static func runHdiutil(staging: String, output: String, volumeName: String) throws {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/hdiutil")
-        process.arguments = [
-            "create",
-            "-volname", volumeName,
-            "-srcfolder", staging,
-            "-ov",
-            "-format", "UDZO",
-            output
-        ]
-        try process.run()
-        process.waitUntilExit()
-        if process.terminationStatus != 0 {
-            throw NSError(
-                domain: "SwiftPress",
-                code: Int(process.terminationStatus),
-                userInfo: [NSLocalizedDescriptionKey: "hdiutil failed (status \(process.terminationStatus))"]
+        var warning: String?
+        do {
+            try DMGLayout.writeDSStore(
+                to: staging,
+                windowSize: DMGWindowPreferences.currentSize,
+                iconSize: DMGIconPreferences.currentSize
             )
+        } catch {
+            warning = L10n.tr("warning.windowLayout")
         }
+
+        try DMGImageBuilder.createCompressedImage(
+            stagingPath: staging.path,
+            outputPath: output.path,
+            volumeName: volumeName
+        )
+        return warning
     }
 }
