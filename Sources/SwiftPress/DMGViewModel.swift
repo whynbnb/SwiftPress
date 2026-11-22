@@ -24,6 +24,22 @@ final class ChildProcessRegistry: @unchecked Sendable {
     }
 }
 
+/// 可打包应用包的校验，GUI 与 CLI 共用。
+enum AppBundle {
+    /// 是否为有效的 `.app`：目录，且包含 `Contents/Info.plist`。
+    static func isValid(at url: URL) -> Bool {
+        guard url.pathExtension.lowercased() == "app" else { return false }
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory),
+              isDirectory.boolValue else {
+            return false
+        }
+        return FileManager.default.fileExists(
+            atPath: url.appendingPathComponent("Contents/Info.plist").path
+        )
+    }
+}
+
 /// 应用信息工具（GUI 与 CLI 共用）。
 enum AppInfo {
     /// 从 `Contents/Info.plist` 读取版本号，读不到返回 "development"。
@@ -80,7 +96,7 @@ class DMGViewModel: ObservableObject {
     }
 
     func setApp(_ url: URL) {
-        guard !isCreating else { return }
+        guard !isCreating, AppBundle.isValid(at: url) else { return }
         appURL = url
         outputURL = AppInfo.defaultOutputURL(for: url)
     }
@@ -472,6 +488,9 @@ enum CommandLineSupport {
         let appURL = fileURL(appPath)
         guard FileManager.default.fileExists(atPath: appURL.path) else {
             fail("找不到应用: \(appURL.path)")
+        }
+        guard AppBundle.isValid(at: appURL) else {
+            fail("不是有效的 .app 包: \(appURL.path)")
         }
 
         let outputURL = outputPath.map(fileURL) ?? AppInfo.defaultOutputURL(for: appURL)

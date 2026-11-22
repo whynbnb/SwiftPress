@@ -138,7 +138,7 @@ struct ContentView: View {
                     provider.loadItem(forTypeIdentifier: "public.file-url", options: nil) { data, _ in
                         guard let data = data as? Data,
                               let url = URL(dataRepresentation: data, relativeTo: nil),
-                              url.pathExtension == "app" else { return }
+                              AppBundle.isValid(at: url) else { return }
                         Task { @MainActor in
                             viewModel.setApp(url)
                         }
@@ -428,6 +428,14 @@ struct ContentView: View {
                                 .padding(.vertical, 1)
                                 .background(Capsule().fill(Color.accentColor))
                         }
+                        if !item.isApplication {
+                            Text(L10n.tr("watch.notApp"))
+                                .font(.system(size: 9, weight: .semibold))
+                                .foregroundColor(.orange)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 1)
+                                .background(Capsule().fill(Color.orange.opacity(0.15)))
+                        }
                     }
                     Text(item.url.path)
                         .font(.caption)
@@ -452,7 +460,7 @@ struct ContentView: View {
             )
         }
         .buttonStyle(.plain)
-        .disabled(viewModel.isCreating)
+        .disabled(viewModel.isCreating || !item.isApplication)
     }
 }
 

@@ -8,6 +8,7 @@ struct DiscoveredApp: Identifiable, Equatable, Sendable {
     let name: String
     let version: String
     let modifiedAt: Date
+    let isApplication: Bool
 
     /// 使用路径作为稳定 ID，重新扫描后选中状态和 NEW 标记不会丢失。
     var id: String { url.path }
@@ -18,6 +19,7 @@ struct DiscoveredApp: Identifiable, Equatable, Sendable {
         self.version = Self.readVersion(from: url)
         self.modifiedAt = (try? url.resourceValues(forKeys: [.contentModificationDateKey]))
             .flatMap { $0.contentModificationDate } ?? Date()
+        self.isApplication = AppBundle.isValid(at: url)
     }
 
     private static func readVersion(from url: URL) -> String {
