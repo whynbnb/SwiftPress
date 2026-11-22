@@ -244,13 +244,22 @@ class DMGViewModel: ObservableObject {
 
         try Task.checkCancellation()
         await report(L10n.tr("status.creating"), 0.7)
+
+        // 先写到同目录的隐藏临时文件，成功后再替换目标文件。
+        // 取消/失败时目标文件保持不变，也不会留下半成品 DMG。
+        let finalOutputURL = URL(fileURLWithPath: outputPath)
+        let tempOutputURL = finalOutputURL.deletingLastPathComponent()
+            .appendingPathComponent(".swiftpress-\(UUID().uuidString).dmg")
+        defer { try? fileManager.removeItem(at: tempOutputURL) }
+
         try DMGImageBuilder.createCompressedImage(
             stagingPath: staging.path,
-            outputPath: outputPath,
+            outputPath: tempOutputURL.path,
             volumeName: volumeName
         )
-
         try Task.checkCancellation()
+        try DMGImageBuilder.publish(tempOutput: tempOutputURL, finalOutput: finalOutputURL)
+
         await report(L10n.tr("status.cleaning"), 0.95)
         try? fileManager.removeItem(at: tempDir)
         await report(L10n.tr("status.done"), 1.0)
@@ -298,6 +307,16 @@ enum DMGImageBuilder {
             )
         }
         return outData
+    }
+
+    /// 把临时输出原子地替换到最终路径；目标已存在时保留其原有属性。
+    static func publish(tempOutput: URL, finalOutput: URL) throws {
+        let fileManager = FileManager.default
+        if fileManager.fileExists(atPath: finalOutput.path) {
+            _ = try fileManager.replaceItemAt(finalOutput, withItemAt: tempOutput)
+        } else {
+            try fileManager.moveItem(at: tempOutput, to: finalOutput)
+        }
     }
 
     /// 创建压缩（UDZO）镜像。
@@ -516,11 +535,16 @@ enum CommandLineSupport {
             warning = L10n.tr("warning.windowLayout")
         }
 
+        let tempOutput = output.deletingLastPathComponent()
+            .appendingPathComponent(".swiftpress-\(UUID().uuidString).dmg")
+        defer { try? fileManager.removeItem(at: tempOutput) }
+
         try DMGImageBuilder.createCompressedImage(
             stagingPath: staging.path,
-            outputPath: output.path,
+            outputPath: tempOutput.path,
             volumeName: volumeName
         )
+        try DMGImageBuilder.publish(tempOutput: tempOutput, finalOutput: output)
         return warning
     }
 }
