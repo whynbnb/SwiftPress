@@ -7,7 +7,7 @@ enum L10n {
     }
 
     private static var localized: [String: String] {
-        let stored = UserDefaults.standard.string(forKey: "app_language") ?? "zh"
+        let stored = Preferences.defaults.string(forKey: "app_language") ?? "zh"
         let code: String
         if stored == "system" {
             code = (Locale.preferredLanguages.first ?? "en").hasPrefix("zh") ? "zh" : "en"

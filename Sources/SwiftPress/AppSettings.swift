@@ -1,5 +1,20 @@
 import SwiftUI
 
+/// 统一偏好设置域。
+///
+/// 正常 App 使用标准域；通过 `swift run` 直接运行 CLI 时没有 bundle id，
+/// 此时回退到 App 的域名，保证命令行也能读到界面上保存的设置。
+enum Preferences {
+    static let suiteName = "me.whynbnb.SwiftPress"
+
+    static var defaults: UserDefaults {
+        if Bundle.main.bundleIdentifier != nil {
+            return .standard
+        }
+        return UserDefaults(suiteName: suiteName) ?? .standard
+    }
+}
+
 /// DMG 打开时的 Finder 窗口尺寸预设。
 enum DMGWindowPreset: String, CaseIterable, Codable {
     case small
@@ -79,7 +94,7 @@ enum DMGWindowPreferences {
     static let heightRange = 240...1200
 
     static var preset: DMGWindowPreset {
-        DMGWindowPreset(rawValue: UserDefaults.standard.string(forKey: presetKey) ?? "") ?? .medium
+        DMGWindowPreset(rawValue: Preferences.defaults.string(forKey: presetKey) ?? "") ?? .medium
     }
 
     /// 当前生效尺寸；`nil` 表示不设置，沿用 Finder 默认。
@@ -90,7 +105,7 @@ enum DMGWindowPreferences {
         if let size = preset.fixedSize {
             return size
         }
-        let defaults = UserDefaults.standard
+        let defaults = Preferences.defaults
         let storedWidth = defaults.integer(forKey: widthKey)
         let storedHeight = defaults.integer(forKey: heightKey)
         let width = storedWidth == 0 ? defaultWidth : storedWidth
@@ -113,7 +128,7 @@ enum DMGIconPreferences {
     static let sizeRange = 32...256
 
     static var preset: DMGIconPreset {
-        DMGIconPreset(rawValue: UserDefaults.standard.string(forKey: presetKey) ?? "") ?? .medium
+        DMGIconPreset(rawValue: Preferences.defaults.string(forKey: presetKey) ?? "") ?? .medium
     }
 
     /// 当前生效大小；`nil` 表示不设置，沿用 Finder 默认。
@@ -124,7 +139,7 @@ enum DMGIconPreferences {
         if let fixed = preset.fixedSize {
             return fixed
         }
-        let stored = UserDefaults.standard.integer(forKey: sizeKey)
+        let stored = Preferences.defaults.integer(forKey: sizeKey)
         let size = stored == 0 ? defaultSize : stored
         return DMGWindowPreferences.clamp(size, to: sizeRange)
     }
@@ -202,12 +217,12 @@ class AppSettings: ObservableObject {
     }
 
     @Published var language: Language {
-        didSet { UserDefaults.standard.set(language.rawValue, forKey: "app_language") }
+        didSet { Preferences.defaults.set(language.rawValue, forKey: "app_language") }
     }
 
     @Published var appearance: Appearance {
         didSet {
-            UserDefaults.standard.set(appearance.rawValue, forKey: "app_appearance")
+            Preferences.defaults.set(appearance.rawValue, forKey: "app_appearance")
             applyAppearance()
         }
     }
@@ -217,23 +232,23 @@ class AppSettings: ObservableObject {
     }
 
     @Published var dmgWindowPreset: DMGWindowPreset {
-        didSet { UserDefaults.standard.set(dmgWindowPreset.rawValue, forKey: DMGWindowPreferences.presetKey) }
+        didSet { Preferences.defaults.set(dmgWindowPreset.rawValue, forKey: DMGWindowPreferences.presetKey) }
     }
 
     @Published var dmgWindowWidth: Int {
-        didSet { UserDefaults.standard.set(dmgWindowWidth, forKey: DMGWindowPreferences.widthKey) }
+        didSet { Preferences.defaults.set(dmgWindowWidth, forKey: DMGWindowPreferences.widthKey) }
     }
 
     @Published var dmgWindowHeight: Int {
-        didSet { UserDefaults.standard.set(dmgWindowHeight, forKey: DMGWindowPreferences.heightKey) }
+        didSet { Preferences.defaults.set(dmgWindowHeight, forKey: DMGWindowPreferences.heightKey) }
     }
 
     @Published var dmgIconPreset: DMGIconPreset {
-        didSet { UserDefaults.standard.set(dmgIconPreset.rawValue, forKey: DMGIconPreferences.presetKey) }
+        didSet { Preferences.defaults.set(dmgIconPreset.rawValue, forKey: DMGIconPreferences.presetKey) }
     }
 
     @Published var dmgIconSize: Int {
-        didSet { UserDefaults.standard.set(dmgIconSize, forKey: DMGIconPreferences.sizeKey) }
+        didSet { Preferences.defaults.set(dmgIconSize, forKey: DMGIconPreferences.sizeKey) }
     }
 
     var resolvedColorScheme: ColorScheme? {
@@ -247,14 +262,14 @@ class AppSettings: ObservableObject {
     var currentLanguage: Language { language }
 
     init() {
-        let savedLang = UserDefaults.standard.string(forKey: "app_language") ?? "zh"
-        let savedAppearance = UserDefaults.standard.string(forKey: "app_appearance") ?? "system"
+        let savedLang = Preferences.defaults.string(forKey: "app_language") ?? "zh"
+        let savedAppearance = Preferences.defaults.string(forKey: "app_appearance") ?? "system"
         self.language = Language(rawValue: savedLang) ?? .zh
         self.appearance = Appearance(rawValue: savedAppearance) ?? .system
         self.watchPaths = Self.loadWatchPaths()
         self.dmgWindowPreset = DMGWindowPreferences.preset
-        let storedWidth = UserDefaults.standard.integer(forKey: DMGWindowPreferences.widthKey)
-        let storedHeight = UserDefaults.standard.integer(forKey: DMGWindowPreferences.heightKey)
+        let storedWidth = Preferences.defaults.integer(forKey: DMGWindowPreferences.widthKey)
+        let storedHeight = Preferences.defaults.integer(forKey: DMGWindowPreferences.heightKey)
         self.dmgWindowWidth = DMGWindowPreferences.clamp(
             storedWidth == 0 ? DMGWindowPreferences.defaultWidth : storedWidth,
             to: DMGWindowPreferences.widthRange
@@ -264,7 +279,7 @@ class AppSettings: ObservableObject {
             to: DMGWindowPreferences.heightRange
         )
         self.dmgIconPreset = DMGIconPreferences.preset
-        let storedIconSize = UserDefaults.standard.integer(forKey: DMGIconPreferences.sizeKey)
+        let storedIconSize = Preferences.defaults.integer(forKey: DMGIconPreferences.sizeKey)
         self.dmgIconSize = DMGWindowPreferences.clamp(
             storedIconSize == 0 ? DMGIconPreferences.defaultSize : storedIconSize,
             to: DMGIconPreferences.sizeRange
@@ -272,7 +287,7 @@ class AppSettings: ObservableObject {
     }
 
     private static func loadWatchPaths() -> [WatchPath] {
-        guard let data = UserDefaults.standard.data(forKey: watchPathsKey),
+        guard let data = Preferences.defaults.data(forKey: watchPathsKey),
               let list = try? JSONDecoder().decode([WatchPath].self, from: data) else {
             return []
         }
@@ -281,7 +296,7 @@ class AppSettings: ObservableObject {
 
     private static func saveWatchPaths(_ list: [WatchPath]) {
         guard let data = try? JSONEncoder().encode(list) else { return }
-        UserDefaults.standard.set(data, forKey: watchPathsKey)
+        Preferences.defaults.set(data, forKey: watchPathsKey)
     }
 
     private func applyAppearance() {

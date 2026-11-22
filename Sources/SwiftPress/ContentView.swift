@@ -12,7 +12,7 @@ struct ContentView: View {
 
     @State private var selectedTab: Tab = .create
     /// 高级设置的展开状态，默认折叠并持久化。
-    @AppStorage("advanced_settings_expanded") private var advancedExpanded = false
+    @AppStorage("advanced_settings_expanded", store: Preferences.defaults) private var advancedExpanded = false
 
     var body: some View {
         Group {
