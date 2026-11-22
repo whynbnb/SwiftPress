@@ -15,6 +15,11 @@ let package = Package(
             swiftSettings: [
                 .unsafeFlags(["-parse-as-library"])
             ]
+        ),
+        .testTarget(
+            name: "SwiftPressTests",
+            dependencies: ["SwiftPress"],
+            path: "Tests/SwiftPressTests"
         )
     ]
 )
