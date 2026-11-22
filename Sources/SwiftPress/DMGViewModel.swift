@@ -63,15 +63,38 @@ enum AppInfo {
         let appName = appURL.deletingPathExtension().lastPathComponent
         let version = version(at: appURL)
         let dateFormatter = DateFormatter()
+        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+        dateFormatter.calendar = Calendar(identifier: .gregorian)
         dateFormatter.dateFormat = "yyyyMMdd"
         let dateStr = dateFormatter.string(from: Date())
         let versionPart = version == "development" ? "development" : "v\(version)"
         return "\(appName) \(versionPart) \(dateStr).dmg"
     }
 
-    /// 默认输出路径（与 app 同目录）。
+    /// 默认输出路径：优先 app 同目录；不可写时回退到下载目录，并避免覆盖同名文件。
     static func defaultOutputURL(for appURL: URL) -> URL {
-        appURL.deletingLastPathComponent().appendingPathComponent(defaultDMGFilename(for: appURL))
+        let appDirectory = appURL.deletingLastPathComponent()
+        let directory: URL
+        if FileManager.default.isWritableFile(atPath: appDirectory.path) {
+            directory = appDirectory
+        } else {
+            directory = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first
+                ?? appDirectory
+        }
+        return uniqueOutputURL(in: directory, filename: defaultDMGFilename(for: appURL))
+    }
+
+    /// 在目录中找一个不冲突的文件名，例如 `Foo.dmg`、`Foo 2.dmg`。
+    static func uniqueOutputURL(in directory: URL, filename: String) -> URL {
+        let base = (filename as NSString).deletingPathExtension
+        let pathExtension = (filename as NSString).pathExtension
+        var candidate = directory.appendingPathComponent(filename)
+        var index = 2
+        while FileManager.default.fileExists(atPath: candidate.path) {
+            candidate = directory.appendingPathComponent("\(base) \(index).\(pathExtension)")
+            index += 1
+        }
+        return candidate
     }
 }
 
@@ -89,6 +112,7 @@ class DMGViewModel: ObservableObject {
     @Published private(set) var lastOutputURL: URL?
 
     private var creationTask: Task<Void, Never>?
+    private var outputWasChosen = false
 
     var defaultOutputName: String {
         guard let appURL else { return "" }
@@ -98,6 +122,7 @@ class DMGViewModel: ObservableObject {
     func setApp(_ url: URL) {
         guard !isCreating, AppBundle.isValid(at: url) else { return }
         appURL = url
+        outputWasChosen = false
         outputURL = AppInfo.defaultOutputURL(for: url)
     }
 
@@ -105,6 +130,7 @@ class DMGViewModel: ObservableObject {
         guard !isCreating else { return }
         appURL = nil
         outputURL = nil
+        outputWasChosen = false
     }
 
     func chooseApp() {
@@ -132,12 +158,22 @@ class DMGViewModel: ObservableObject {
             panel.directoryURL = appDir
         }
         if panel.runModal() == .OK, let url = panel.url {
+            outputWasChosen = true
             outputURL = url
         }
     }
 
     func createDMG() {
-        guard let appURL, let outputURL, !isCreating else { return }
+        guard let appURL, var outputURL, !isCreating else { return }
+
+        // 使用默认输出名时，如果同名文件已存在，自动换一个不冲突的名字。
+        if !outputWasChosen, FileManager.default.fileExists(atPath: outputURL.path) {
+            outputURL = AppInfo.uniqueOutputURL(
+                in: outputURL.deletingLastPathComponent(),
+                filename: outputURL.lastPathComponent
+            )
+            self.outputURL = outputURL
+        }
 
         isCreating = true
         progress = 0
