@@ -50,13 +50,13 @@ struct ContentView: View {
         }
         .alert(L10n.tr("alert.success"), isPresented: $viewModel.showSuccess) {
             Button(L10n.tr("alert.showInFinder")) {
-                if let url = viewModel.outputURL {
+                if let url = viewModel.lastOutputURL {
                     NSWorkspace.shared.activateFileViewerSelecting([url])
                 }
             }
             Button(L10n.tr("alert.ok")) {}
         } message: {
-            Text(L10n.tr("alert.success.msg", viewModel.outputURL?.lastPathComponent ?? "")
+            Text(L10n.tr("alert.success.msg", viewModel.lastOutputURL?.lastPathComponent ?? "")
                 + (viewModel.warningMessage.map { "\n\n" + $0 } ?? ""))
         }
         .alert(L10n.tr("alert.error"), isPresented: .init(
@@ -105,6 +105,7 @@ struct ContentView: View {
                                     .foregroundColor(.secondary)
                             }
                             .buttonStyle(.plain)
+                            .disabled(viewModel.isCreating)
                         }
                         .padding(8)
                         .background(RoundedRectangle(cornerRadius: 8).fill(Color(nsColor: .controlBackgroundColor)))
@@ -120,6 +121,7 @@ struct ContentView: View {
                             Button(L10n.tr("drop.browse")) {
                                 viewModel.chooseApp()
                             }
+                            .disabled(viewModel.isCreating)
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 24)
@@ -132,7 +134,7 @@ struct ContentView: View {
                     }
                 }
                 .onDrop(of: [.fileURL], isTargeted: nil) { providers in
-                    guard let provider = providers.first else { return false }
+                    guard !viewModel.isCreating, let provider = providers.first else { return false }
                     provider.loadItem(forTypeIdentifier: "public.file-url", options: nil) { data, _ in
                         guard let data = data as? Data,
                               let url = URL(dataRepresentation: data, relativeTo: nil),
@@ -150,13 +152,16 @@ struct ContentView: View {
                             Text(L10n.tr("output.label"))
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
-                            Text(viewModel.defaultOutputName)
+                            Text(viewModel.outputURL?.lastPathComponent ?? viewModel.defaultOutputName)
                                 .font(.subheadline)
                                 .fontWeight(.medium)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
                             Spacer()
                             Button(L10n.tr("output.change")) {
                                 viewModel.chooseOutput()
                             }
+                            .disabled(viewModel.isCreating)
                         }
                         Text(viewModel.outputURL?.deletingLastPathComponent().path ?? "")
                             .font(.caption)
@@ -447,6 +452,7 @@ struct ContentView: View {
             )
         }
         .buttonStyle(.plain)
+        .disabled(viewModel.isCreating)
     }
 }
 

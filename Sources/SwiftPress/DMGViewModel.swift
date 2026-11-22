@@ -69,6 +69,8 @@ class DMGViewModel: ObservableObject {
     @Published var showSuccess: Bool = false
     @Published var errorMessage: String?
     @Published var warningMessage: String?
+    /// 最近一次成功生成的 DMG 路径（创建过程中 outputURL 可能被修改）。
+    @Published private(set) var lastOutputURL: URL?
 
     private var creationTask: Task<Void, Never>?
 
@@ -78,16 +80,19 @@ class DMGViewModel: ObservableObject {
     }
 
     func setApp(_ url: URL) {
+        guard !isCreating else { return }
         appURL = url
         outputURL = AppInfo.defaultOutputURL(for: url)
     }
 
     func clearApp() {
+        guard !isCreating else { return }
         appURL = nil
         outputURL = nil
     }
 
     func chooseApp() {
+        guard !isCreating else { return }
         let panel = NSOpenPanel()
         panel.title = L10n.tr("panel.chooseApp")
         panel.canChooseDirectories = false
@@ -100,6 +105,7 @@ class DMGViewModel: ObservableObject {
     }
 
     func chooseOutput() {
+        guard !isCreating else { return }
         let panel = NSSavePanel()
         panel.title = L10n.tr("panel.saveDMG")
         panel.allowedContentTypes = [.diskImage]
@@ -122,6 +128,7 @@ class DMGViewModel: ObservableObject {
         statusMessage = L10n.tr("status.preparing")
         errorMessage = nil
         warningMessage = nil
+        lastOutputURL = nil
 
         let dmgPath = outputURL.path
         let appName = appURL.lastPathComponent
@@ -145,7 +152,7 @@ class DMGViewModel: ObservableObject {
                 ) { message, value in
                     await self.updateStatus(message, progress: value)
                 }
-                self.finishSuccess(warning: warning)
+                self.finishSuccess(outputURL: outputURL, warning: warning)
             } catch is CancellationError {
                 try? FileManager.default.removeItem(at: tempDir)
                 ChildProcessRegistry.shared.terminate()
@@ -170,10 +177,11 @@ class DMGViewModel: ObservableObject {
         creationTask?.cancel()
     }
 
-    private func finishSuccess(warning: String?) {
+    private func finishSuccess(outputURL: URL, warning: String?) {
         isCreating = false
         progress = 1.0
         warningMessage = warning
+        lastOutputURL = outputURL
         showSuccess = true
     }
 
