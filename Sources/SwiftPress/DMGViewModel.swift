@@ -411,6 +411,7 @@ enum DMGLayout {
     }
 
     /// 模板中由 Finder 写入的原始值，替换时要求长度一致。
+    /// 模板是在 1920×1080 的空白卷上生成的；重新生成后若占位值变化，需要同步更新这里。
     private static let templateBounds = "{{200, -40}, {1000, 1000}}"
     private static let templateIconSize = 76.0
 
@@ -428,32 +429,43 @@ enum DMGLayout {
             let screenHeight = Int(CGDisplayBounds(CGMainDisplayID()).height)
             let bottomY = max(0, min(screenHeight - 120 - windowSize.height, 999))
             let bounds = "{{200, \(String(format: "%3d", bottomY))}, {\(padded(windowSize.width)), \(padded(windowSize.height))}}"
-            guard bounds.utf8.count == templateBounds.utf8.count,
-                  let boundsRange = data.range(of: Data(templateBounds.utf8)) else {
+            guard bounds.utf8.count == templateBounds.utf8.count else {
                 throw LayoutError.invalidTemplate
             }
-            data.replaceSubrange(boundsRange, with: Data(bounds.utf8))
+            try replaceUnique(Data(templateBounds.utf8), with: Data(bounds.utf8), in: &data)
         } else {
             // 不设置窗口大小：把键名改成同长度的未知键，Finder 会回落默认尺寸。
-            let key = Data("WindowBounds".utf8)
-            guard let keyRange = data.range(of: key) else {
-                throw LayoutError.invalidTemplate
-            }
-            data.replaceSubrange(keyRange, with: Data("WindowBoundX".utf8))
+            try replaceUnique(
+                Data("WindowBounds".utf8),
+                with: Data("WindowBoundX".utf8),
+                in: &data
+            )
         }
 
         // 不设置图标大小时使用 Finder 默认值，同时保留按名称排列等视图设置。
         let effectiveIconSize = iconSize ?? DMGIconPreferences.unsetFallbackSize
         var oldIconBits = templateIconSize.bitPattern.bigEndian
         let oldIconData = withUnsafeBytes(of: &oldIconBits) { Data($0) }
-        guard let iconRange = data.range(of: oldIconData) else {
-            throw LayoutError.invalidTemplate
-        }
         var newIconBits = Double(effectiveIconSize).bitPattern.bigEndian
         let newIconData = withUnsafeBytes(of: &newIconBits) { Data($0) }
-        data.replaceSubrange(iconRange, with: newIconData)
+        try replaceUnique(oldIconData, with: newIconData, in: &data)
 
         try data.write(to: directory.appendingPathComponent(".DS_Store"))
+    }
+
+    /// 只替换模板中唯一出现、且长度不变的一段字节，避免误改其他字段。
+    private static func replaceUnique(
+        _ needle: Data,
+        with replacement: Data,
+        in data: inout Data
+    ) throws {
+        guard !needle.isEmpty,
+              needle.count == replacement.count,
+              let range = data.range(of: needle),
+              data.range(of: needle, options: [], in: range.upperBound..<data.endIndex) == nil else {
+            throw LayoutError.invalidTemplate
+        }
+        data.replaceSubrange(range, with: replacement)
     }
 
     /// 4 位宽、空格补位，保证替换后的字符串与模板等长。
