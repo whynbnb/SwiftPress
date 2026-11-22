@@ -2,6 +2,13 @@
   <img src="docs/logo.png" width="128" height="128" alt="SwiftPress">
 </p>
 
+<p align="center">
+  <a href="https://www.swift.org/"><img src="https://img.shields.io/badge/Swift-6.0-F05138?style=flat-square&logo=swift&logoColor=white" alt="Swift"></a>
+  <a href="https://www.apple.com/macos/"><img src="https://img.shields.io/badge/macOS-15%2B-000000?style=flat-square&logo=apple&logoColor=white" alt="macOS 15+"></a>
+  <a href="https://github.com/whynbnb/SwiftPress/blob/main/LICENSE"><img src="https://img.shields.io/github/license/whynbnb/SwiftPress?style=flat-square" alt="License"></a>
+  <a href="https://github.com/whynbnb/SwiftPress/commits/main"><img src="https://img.shields.io/github/last-commit/whynbnb/SwiftPress?style=flat-square" alt="Last commit"></a>
+</p>
+
 # SwiftPress
 
 > 由 Vibe Coding 而成（DeepSeek V4.1 Flash / OpenCode）
