@@ -51,6 +51,22 @@ enum L10n {
         "about.license": "开源许可:",
         "about.repo": "源码仓库:",
         "about.copyright": "Copyright © 2026 whynbnb",
+        "cli.usage": """
+        SwiftPress CLI
+
+        用法:
+          SwiftPress --app <path/to/App.app> [--output <path/to/out.dmg>]
+
+        选项:
+          --app            待打包的 .app 路径（必填）
+          --output, -o     输出 DMG 路径（可选，默认与 app 同目录，按版本+日期命名）
+          -h, --help       显示帮助
+        """,
+        "cli.error.missingApp": "缺少 --app 参数",
+        "cli.error.appNotFound": "找不到应用: %@",
+        "cli.error.notApp": "不是有效的 .app 包: %@",
+        "cli.error.createFailed": "制作失败: %@",
+        "cli.success": "✅ 已生成 %@",
         "settings.language": "语言",
         "settings.language.system": "跟随系统",
         "settings.windowTitle": "SwiftPress 设置",
@@ -138,6 +154,22 @@ enum L10n {
         "about.license": "License:",
         "about.repo": "Repository:",
         "about.copyright": "Copyright © 2026 whynbnb",
+        "cli.usage": """
+        SwiftPress CLI
+
+        Usage:
+          SwiftPress --app <path/to/App.app> [--output <path/to/out.dmg>]
+
+        Options:
+          --app            Path to the .app to package (required)
+          --output, -o     Output DMG path (optional; defaults next to the app, named by version + date)
+          -h, --help       Show this help
+        """,
+        "cli.error.missingApp": "Missing --app argument",
+        "cli.error.appNotFound": "App not found: %@",
+        "cli.error.notApp": "Not a valid .app bundle: %@",
+        "cli.error.createFailed": "Creation failed: %@",
+        "cli.success": "✅ Created %@",
         "settings.language": "Language",
         "settings.language.system": "System",
         "settings.windowTitle": "SwiftPress Settings",

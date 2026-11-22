@@ -530,15 +530,15 @@ enum CommandLineSupport {
         }
 
         guard let appPath else {
-            fail("缺少 --app 参数")
+            fail(L10n.tr("cli.error.missingApp"))
         }
 
         let appURL = fileURL(appPath)
         guard FileManager.default.fileExists(atPath: appURL.path) else {
-            fail("找不到应用: \(appURL.path)")
+            fail(L10n.tr("cli.error.appNotFound", appURL.path))
         }
         guard AppBundle.isValid(at: appURL) else {
-            fail("不是有效的 .app 包: \(appURL.path)")
+            fail(L10n.tr("cli.error.notApp", appURL.path))
         }
 
         let outputURL = outputPath.map(fileURL) ?? AppInfo.defaultOutputURL(for: appURL)
@@ -548,10 +548,10 @@ enum CommandLineSupport {
             if let warning {
                 print("⚠️ \(warning)")
             }
-            print("✅ 已生成 \(outputURL.path)")
+            print(L10n.tr("cli.success", outputURL.path))
             exit(0)
         } catch {
-            fail("制作失败: \(error.localizedDescription)")
+            fail(L10n.tr("cli.error.createFailed", error.localizedDescription))
         }
     }
 
@@ -560,17 +560,7 @@ enum CommandLineSupport {
     }
 
     private static func printUsage() {
-        print("""
-        SwiftPress CLI
-
-        用法:
-          SwiftPress --app <path/to/App.app> [--output <path/to/out.dmg>]
-
-        选项:
-          --app            待打包的 .app 路径（必填）
-          --output, -o     输出 DMG 路径（可选，默认与 app 同目录，按版本+日期命名）
-          -h, --help       显示帮助
-        """)
+        print(L10n.tr("cli.usage"))
     }
 
     private static func fail(_ message: String) -> Never {
