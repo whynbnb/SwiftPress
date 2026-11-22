@@ -62,6 +62,8 @@ Options:
 
 The CLI applies the icon size and window size saved in the app's Advanced Settings.
 
+Without `--output`, the DMG is written next to the app. If that folder isn't writable, it falls back to Downloads, and an existing name gets a numeric suffix (` 2`, ` 3`, …).
+
 ## How it works
 
 The DMG layout is written directly into the image, without talking to Finder at packaging time.
