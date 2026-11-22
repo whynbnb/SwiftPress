@@ -67,17 +67,38 @@ final class WatchManager: ObservableObject {
     private var pendingRescan = false
 
     private var pollTask: Task<Void, Never>?
+    private var syncTask: Task<Void, Never>?
 
     private let maxItems = 200
 
     private init() {}
 
     /// 根据当前设置重建监听。设置变化时调用。
+    ///
+    /// 配置编辑（尤其是扩展名输入）会连续触发，这里做 400ms 去抖，
+    /// 避免每敲一个字符都重启 FSEvents 并全量扫描。
     func sync(with watchPaths: [WatchPath]) {
-        activeWatchPaths = watchPaths.filter { $0.enabled && !$0.path.isEmpty }
+        syncTask?.cancel()
+        let snapshot = watchPaths
+        syncTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(400))
+            guard !Task.isCancelled else { return }
+            self?.applySync(snapshot)
+        }
+    }
+
+    private func applySync(_ watchPaths: [WatchPath]) {
+        let newActiveWatchPaths = watchPaths.filter { $0.enabled && !$0.path.isEmpty }
+        let configurationChanged = newActiveWatchPaths != activeWatchPaths
+
+        activeWatchPaths = newActiveWatchPaths
         monitoredCount = activeWatchPaths.count
         monitoredPaths = activeWatchPaths.map(\.path)
         unreadablePaths = Set(monitoredPaths.filter { !FileManager.default.isReadableFile(atPath: $0) })
+
+        // 配置未变化时（例如启动时重复调用）不重启监听、不重复全量扫描。
+        guard configurationChanged || (!hasScanned && !isScanning) else { return }
+
         restartStream()
         startPolling()
         rescan()

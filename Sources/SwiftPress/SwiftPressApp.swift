@@ -8,10 +8,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         true
     }
 
-    // 启动即扫描一次，确保已有文件立刻出现在监听列表中
     func applicationDidFinishLaunching(_ notification: Notification) {
         AppSettings.shared.applyOnLaunch()
-        WatchManager.shared.sync(with: AppSettings.shared.watchPaths)
         // 鼠标按下时立即激活 App 并使窗口成为 key，避免"第一下点击只用于激活、第二下才生效"
         mouseMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown]) { event in
             MainActor.assumeIsolated {
