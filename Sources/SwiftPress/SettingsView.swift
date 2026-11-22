@@ -119,7 +119,7 @@ private struct WatchPathRow: View {
 }
 
 /// 直接把宿主窗口的标题设为指定文本，用于本地化 `Settings` 场景的窗口标题。
-private struct WindowTitleSetter: NSViewRepresentable {
+struct WindowTitleSetter: NSViewRepresentable {
     let title: String
 
     func makeNSView(context: Context) -> NSView {

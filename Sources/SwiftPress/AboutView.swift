@@ -69,6 +69,7 @@ struct AboutView: View {
         }
         .padding(24)
         .frame(width: 280, height: 380)
+        .background(WindowTitleSetter(title: L10n.tr("about.title")))
         .preferredColorScheme(settings.resolvedColorScheme)
     }
 }
