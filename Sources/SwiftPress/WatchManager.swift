@@ -151,17 +151,27 @@ final class WatchManager: ObservableObject {
             let manager = Unmanaged<WatchManager>.fromOpaque(info).takeUnretainedValue()
             let pathList = unsafeBitCast(paths, to: NSArray.self) as? [String] ?? []
 
-            var dropped = false
+            var needsFullRescan = false
+            var rootChanged = false
             for index in 0..<numEvents {
                 let flag = flags[index]
                 if flag & FSEventStreamEventFlags(kFSEventStreamEventFlagUserDropped) != 0
-                    || flag & FSEventStreamEventFlags(kFSEventStreamEventFlagKernelDropped) != 0 {
-                    dropped = true
+                    || flag & FSEventStreamEventFlags(kFSEventStreamEventFlagKernelDropped) != 0
+                    || flag & FSEventStreamEventFlags(kFSEventStreamEventFlagMustScanSubDirs) != 0
+                    || flag & FSEventStreamEventFlags(kFSEventStreamEventFlagEventIdsWrapped) != 0 {
+                    needsFullRescan = true
+                }
+                if flag & FSEventStreamEventFlags(kFSEventStreamEventFlagRootChanged) != 0 {
+                    rootChanged = true
                 }
             }
 
             MainActor.assumeIsolated {
-                manager.handleEvents(paths: pathList, dropped: dropped)
+                manager.handleEvents(
+                    paths: pathList,
+                    needsFullRescan: needsFullRescan,
+                    rootChanged: rootChanged
+                )
             }
         }
 
@@ -187,11 +197,17 @@ final class WatchManager: ObservableObject {
     }
 
     /// FSEvents 增量更新：只处理变化的路径，避免全量扫描。
-    private func handleEvents(paths: [String], dropped: Bool) {
+    private func handleEvents(paths: [String], needsFullRescan: Bool, rootChanged: Bool) {
         eventCount += paths.count
 
-        // 只有在真正丢事件时才做一次全量校正
-        if dropped {
+        // 监听根目录被移动/删除，或事件被合并/丢弃时，做一次全量校正。
+        if rootChanged {
+            unreadablePaths = Set(monitoredPaths.filter { !FileManager.default.isReadableFile(atPath: $0) })
+            restartStream()
+            rescan()
+            return
+        }
+        if needsFullRescan {
             rescan()
             return
         }
