@@ -50,12 +50,12 @@ struct AboutView: View {
                         .fontWeight(.medium)
                 }
 
-                if let repoURL = URL(string: "https://github.com/WHYBBE/SwiftPress") {
+                if let repoURL = URL(string: "https://github.com/whynbnb/SwiftPress") {
                     HStack(spacing: 4) {
                         Text(L10n.tr("about.repo"))
                             .font(.caption)
                             .foregroundColor(.secondary)
-                        Link("github.com/WHYBBE/SwiftPress", destination: repoURL)
+                        Link("github.com/whynbnb/SwiftPress", destination: repoURL)
                             .font(.caption)
                     }
                 }
