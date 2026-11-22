@@ -4,14 +4,15 @@ import CoreServices
 
 /// 监听目录中发现的一个候选文件。
 struct DiscoveredApp: Identifiable, Equatable, Sendable {
-    let id: UUID
     let url: URL
     let name: String
     let version: String
     let modifiedAt: Date
 
-    init(id: UUID = UUID(), url: URL) {
-        self.id = id
+    /// 使用路径作为稳定 ID，重新扫描后选中状态和 NEW 标记不会丢失。
+    var id: String { url.path }
+
+    init(url: URL) {
         self.url = url
         self.name = url.deletingPathExtension().lastPathComponent
         self.version = Self.readVersion(from: url)
@@ -45,9 +46,9 @@ final class WatchManager: ObservableObject {
 
     @Published private(set) var discovered: [DiscoveredApp] = []
     /// 用户手动点击选中的项（仅用于列表高亮，不自动选中）。
-    @Published var selectedID: UUID?
+    @Published var selectedID: String?
     /// 新检测到、尚未点击查看的项，用于显示 NEW 标记。
-    @Published private(set) var newIDs: Set<UUID> = []
+    @Published private(set) var newIDs: Set<String> = []
     @Published private(set) var monitoredCount = 0
     @Published private(set) var monitoredPaths: [String] = []
     @Published private(set) var unreadablePaths: Set<String> = []
@@ -88,7 +89,7 @@ final class WatchManager: ObservableObject {
     }
 
     /// 用户点击某项：清除它的 NEW 标记并设为选中。
-    func select(_ id: UUID) {
+    func select(_ id: String) {
         selectedID = id
         newIDs.remove(id)
     }
