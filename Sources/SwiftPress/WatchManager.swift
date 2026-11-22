@@ -63,8 +63,7 @@ final class WatchManager: ObservableObject {
     private var hasScanned = false
 
     private var scanGeneration = 0
-    private var scanInFlight = false
-    private var pendingRescan = false
+    private var scanTask: Task<Void, Never>?
 
     private var pollTask: Task<Void, Never>?
     private var syncTask: Task<Void, Never>?
@@ -286,31 +285,23 @@ final class WatchManager: ObservableObject {
     private func rescan() {
         scanGeneration += 1
         let generation = scanGeneration
+        let snapshot = activeWatchPaths
 
-        if scanInFlight {
-            pendingRescan = true
-            return
-        }
-        scanInFlight = true
+        // 新的扫描立即取消旧扫描，避免修改配置后还要等旧目录扫完。
+        scanTask?.cancel()
         isScanning = true
 
-        let snapshot = activeWatchPaths
-        Task.detached(priority: .utility) {
+        scanTask = Task.detached(priority: .utility) {
             let matches = Self.scan(watchPaths: snapshot) { partial in
                 Task { @MainActor in
                     self.publishPartial(partial, generation: generation)
                 }
             }
+            guard !Task.isCancelled else { return }
             await MainActor.run {
-                self.scanInFlight = false
+                guard generation == self.scanGeneration else { return }
                 self.isScanning = false
-                if generation == self.scanGeneration {
-                    self.applyScan(matches)
-                }
-                if self.pendingRescan {
-                    self.pendingRescan = false
-                    self.rescan()
-                }
+                self.applyScan(matches)
             }
         }
     }
@@ -331,6 +322,7 @@ final class WatchManager: ObservableObject {
         var processed = 0
 
         for watchPath in watchPaths {
+            if Task.isCancelled { return matches }
             let baseURL = URL(fileURLWithPath: watchPath.path)
             let wantedExtension = watchPath.fileExtension
                 .trimmingCharacters(in: CharacterSet(charactersIn: ". "))
@@ -346,6 +338,7 @@ final class WatchManager: ObservableObject {
                     continue
                 }
                 for entry in entries where !entry.hasPrefix(".") {
+                    if Task.isCancelled { return matches }
                     let url = baseURL.appendingPathComponent(entry)
                     if matchesExtension(url) {
                         matches.append(DiscoveredApp(url: url))
@@ -363,6 +356,7 @@ final class WatchManager: ObservableObject {
                 let rootPrefix = baseURL.path + "/"
                 let maxDepth = watchPath.depth.maxDepth ?? 2
                 for case let url as URL in enumerator {
+                    if Task.isCancelled { return matches }
                     processed += 1
                     let relativeDepth = url.path.hasPrefix(rootPrefix)
                         ? url.path.dropFirst(rootPrefix.count).split(separator: "/").count
@@ -393,6 +387,7 @@ final class WatchManager: ObservableObject {
                     continue
                 }
                 for case let url as URL in enumerator {
+                    if Task.isCancelled { return matches }
                     processed += 1
                     if matchesExtension(url) {
                         matches.append(DiscoveredApp(url: url))
