@@ -106,6 +106,8 @@ struct ContentView: View {
                             }
                             .buttonStyle(.plain)
                             .disabled(viewModel.isCreating)
+                            .help(L10n.tr("drop.clear"))
+                            .accessibilityLabel(L10n.tr("drop.clear"))
                         }
                         .padding(8)
                         .background(RoundedRectangle(cornerRadius: 8).fill(Color(nsColor: .controlBackgroundColor)))
@@ -228,6 +230,7 @@ struct ContentView: View {
                     }
                     .buttonStyle(.borderless)
                     .help(L10n.tr("advanced.reset"))
+                    .accessibilityLabel(L10n.tr("advanced.reset"))
 
                     Button {
                         settings.dmgIconPreset = .unset
@@ -236,6 +239,7 @@ struct ContentView: View {
                     }
                     .buttonStyle(.borderless)
                     .help(L10n.tr("advanced.unset"))
+                    .accessibilityLabel(L10n.tr("advanced.unset"))
                     .disabled(settings.dmgIconPreset == .unset)
                 }
 
@@ -270,6 +274,7 @@ struct ContentView: View {
                     }
                     .buttonStyle(.borderless)
                     .help(L10n.tr("advanced.reset"))
+                    .accessibilityLabel(L10n.tr("advanced.reset"))
 
                     Button {
                         settings.dmgWindowPreset = .unset
@@ -278,6 +283,7 @@ struct ContentView: View {
                     }
                     .buttonStyle(.borderless)
                     .help(L10n.tr("advanced.unset"))
+                    .accessibilityLabel(L10n.tr("advanced.unset"))
                     .disabled(settings.dmgWindowPreset == .unset)
                 }
 
@@ -349,6 +355,7 @@ struct ContentView: View {
                 }
                 .buttonStyle(.borderless)
                 .help(L10n.tr("watch.refresh"))
+                .accessibilityLabel(L10n.tr("watch.refresh"))
             }
 
             if watchManager.discovered.isEmpty {
@@ -475,6 +482,7 @@ struct SettingsButton: View {
             Image(systemName: "gearshape")
         }
         .help(L10n.tr("btn.settings"))
+        .accessibilityLabel(L10n.tr("btn.settings"))
     }
 }
 
