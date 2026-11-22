@@ -60,6 +60,19 @@ SwiftPress --help
 
 命令行会沿用主界面「高级设置」中保存的图标大小与窗口大小。
 
+## 实现原理
+
+DMG 的布局是直接写进镜像的，打包过程中不调用 Finder。
+
+- App 内置一份预生成的 `.DS_Store` 模板：隐藏工具栏、侧栏、路径栏和状态栏，使用图标视图，并按名称排列图标。
+- 打包时把模板复制到 staging 目录，并按设置原地修改字节：
+  - **窗口大小** — 替换 `bwsp` 记录中的 `WindowBounds` 字符串，使用等长的空格补位；`WindowBounds` 使用左下角原点，因此会按屏幕高度换算成距顶部 120pt 的位置。
+  - **图标大小** — 替换 `icvp` 记录中的 `iconSize` 数值。
+- 最后由 `hdiutil create -srcfolder … -format UDZO` 生成 DMG。
+- 选择「不设置」时，该项交给 Finder 决定：窗口项会把 `WindowBounds` 键改名，让 Finder 使用默认窗口尺寸；图标大小则回落到 Finder 默认值（48）。
+
+因为 `.DS_Store` 在 `hdiutil` 执行前就已写好，整个打包过程不挂载镜像，也不会弹出 Finder 窗口或请求自动化权限。
+
 ## 系统要求
 
 - macOS 15.0+

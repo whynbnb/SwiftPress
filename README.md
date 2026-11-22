@@ -62,6 +62,19 @@ Options:
 
 The CLI applies the icon size and window size saved in the app's Advanced Settings.
 
+## How it works
+
+The DMG layout is written directly into the image, without talking to Finder at packaging time.
+
+- A pre-generated `.DS_Store` template is bundled with the app. It hides the toolbar, sidebar, path bar and status bar, selects icon view, and arranges icons by name.
+- While packaging, the template is copied into the staging folder and patched in place:
+  - **Window size** — the `WindowBounds` string in the `bwsp` record is replaced with an equally long, space-padded string. `WindowBounds` uses a bottom-left origin, so the position is converted from the top of the screen (120 pt margin).
+  - **Icon size** — the `iconSize` value in the `icvp` record is replaced with the selected size.
+- `hdiutil create -srcfolder … -format UDZO` then builds the final image.
+- Choosing **No setting** leaves that dimension to Finder: the `WindowBounds` key is renamed so Finder uses its default window size, and the icon size falls back to Finder's default (48).
+
+Because the `.DS_Store` is written before `hdiutil` runs, no image is mounted and no Finder window or automation permission is involved.
+
 ## Requirements
 
 - macOS 15.0+
